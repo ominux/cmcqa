@@ -66,9 +66,13 @@ sub runNoiseTest {
                         print OF "v_$pin $pin 0 $main::BiasFor{$pin}";
                     }
                 }
-                print OF "x1 ".join(" ",@main::Pin)." mysub";
-                print OF "hn 0 n_$noisePin v_$noisePin 1";
-                print OF ".noise v(n_$noisePin) vin $main::frequencySpec";
+                if ($main::isFloatingPin{$noisePin}) {
+                    print OF ".noise v($noisePin) vin $main::frequencySpec";
+                } else {
+                    print OF "x1 ".join(" ",@main::Pin)." mysub";
+                    print OF "hn 0 n_$noisePin v_$noisePin 1";
+                    print OF ".noise v(n_$noisePin) vin $main::frequencySpec";
+                }
                 print OF ".print noise all";
                 print OF ".end";
                 close(OF);

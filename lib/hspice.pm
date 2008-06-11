@@ -103,10 +103,16 @@ sub runNoiseTest {
                     }
                 }
                 print OF "x1 ".join(" ",@main::Pin)." mysub";
-                print OF "fn 0 n_$noisePin v_$noisePin 1";
-                print OF "rn 0 n_$noisePin rmod";
+                if (! $main::isFloatingPin{$noisePin}) {
+                    print OF "fn 0 n_$noisePin v_$noisePin 1";
+                    print OF "rn 0 n_$noisePin rmod";
+                }
                 print OF ".ac $main::frequencySpec";
-                print OF ".noise v(n_$noisePin) vin $main::frequencySpec";
+                if ($main::isFloatingPin{$noisePin}) {
+                    print OF ".noise v($noisePin) vin $main::frequencySpec";
+                } else {
+                    print OF ".noise v(n_$noisePin) vin $main::frequencySpec";
+                }
                 print OF ".print noise onoise";
                 print OF ".end";
                 close(OF);

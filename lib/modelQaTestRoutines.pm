@@ -444,7 +444,7 @@ sub processTestSpec {
         if ($main::isSymmetryPin{$pin} && $main::isFloatingPin{$pin}) {
             die("ERROR: a floating pin cannot be specified as a symmetry pin, stopped");
         }
-        if ($isAnalysisPin{$pin} && $main::isFloatingPin{$pin}) {
+        if ($isAnalysisPin{$pin} && $main::isFloatingPin{$pin} && !main::outputNoise) {
             die("ERROR: a floating pin can only have its voltage measured in DC analyses, stopped");
         }
     }
