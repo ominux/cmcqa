@@ -1,0 +1,66 @@
+
+//
+// Test specification for MOSVAR v1.0.15
+//
+
+//
+// Simulator specific information 
+//
+
+//must use Spectre as the simulator (for now)
+`ifdef spectre
+nTypeSelectionArguments     mosvar //change TYPE and TYPEP manually
+pTypeSelectionArguments     mosvar //default for MOSVAR QA
+`endif
+
+//
+// General test-independent information
+//
+
+keyLetter                   x
+pins                        g bi b
+temperature                 25 -40 125 // use DTA, not $temperature in runQaTest.pl (for now)
+checkPolarity               no // no palarity test in MOSVAR QA
+scaleParameters             m  // use M_SEG, not m in runQaTest.pl (for now); no scale and shrink  
+verilogaFile                vacode/mosvar.va
+
+//
+// Specific tests
+//
+
+
+// *** Ig-Vg Tests ***
+
+// Ig-Vg @ Vb=0V, SWIGATE=1
+test                        igvg
+biases                      V(b)=0
+float                       bi
+biasSweep                   V(g)=-2.0,2.0,0.02
+outputs                     I(g)
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs
+
+
+// *** AC G & C Tests vs. Vg ***
+
+// Quality factor & capacitance vs. Vg
+test                        acvg
+biases                      V(b)=0
+float                       bi
+biasSweep                   V(g)=-2.0,2.0,0.02
+freq                        lin 1 2e9 2e9
+outputs                     C(g,g) Q(g,g) 
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs
+
+
+// *** AC C Tests vs. Freq. ***
+
+// Capacitance vs. frequency @ Vg=2V
+test                        acfreq
+biases                      V(b)=0 V(g)=2.0
+float                       bi
+freq                        dec 100 1e9 1e10
+outputs                     C(g,g) Q(g,g)
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs

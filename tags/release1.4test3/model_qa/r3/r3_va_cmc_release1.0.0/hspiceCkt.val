@@ -1,0 +1,25 @@
+* Verilog-A Log File
+* Input File  : hspiceCkt
+* RTE Version : 1.48
+
+    During .hdl command processing, loading Verilog-A modules from
+            './vacode/r3_cmc.va'.
+hsp-vacomp: 
+hsp-vacomp: Invoking the Verilog-A compiler for 'r3_cmc.va'
+hsp-vacomp:  lic: 
+hsp-vacomp:  lic: FLEXlm: v8.5b
+hsp-vacomp:  lic: USER:   jrjones              HOSTNAME: syzygy.btv.ibm.com
+hsp-vacomp:  lic: HOSTID: 000d60533fed         PID:      19672
+hsp-vacomp:  lic: Using FLEXlm license file:
+hsp-vacomp:  lic: 27000@licsrv07.btv.ibm.com
+hsp-vacomp:  lic: Checkout 1 hspiceva
+hsp-vacomp:  lic: License/Maintenance for hspiceva will expire on 07-jan-2009/2007.09
+hsp-vacomp:  lic: FLOATING license(s) on SERVER licsrv07.btv.ibm.com
+hsp-vacomp:  lic:  
+hsp-vacomp: Synopsys HSPICE Verilog-A Compiler Version 1.48.101707.
+hsp-vacomp: Copyright (C) 2005 Synopsys, Inc. All Rights Reserved.
+hsp-vacomp: 
+hsp-vacomp: 
+hsp-vacomp: The CML file is up to date. No compilation necessary.
+hsp-vacomp: 
+hsp-vacomp:  lic: Release hspiceva token(s)

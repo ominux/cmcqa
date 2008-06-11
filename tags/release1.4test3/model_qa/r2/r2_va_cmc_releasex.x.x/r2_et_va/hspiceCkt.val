@@ -1,0 +1,41 @@
+* Verilog-A Log File
+* Input File  : hspiceCkt
+* RTE Version : 1.48
+
+    During .hdl command processing, loading Verilog-A modules from
+            './veriloga/cmcModels.va'.
+hsp-vacomp: 
+hsp-vacomp: Invoking the Verilog-A compiler for 'cmcModels.va'
+hsp-vacomp:  lic: 
+hsp-vacomp:  lic: FLEXlm: v8.5b
+hsp-vacomp:  lic: USER:   jrjones              HOSTNAME: syzygy.btv.ibm.com
+hsp-vacomp:  lic: HOSTID: 000d60533fed         PID:      12116
+hsp-vacomp:  lic: Using FLEXlm license file:
+hsp-vacomp:  lic: 27000@licsrv07.btv.ibm.com
+hsp-vacomp:  lic: Checkout 1 hspiceva
+hsp-vacomp:  lic: License/Maintenance for hspiceva will expire on 07-jan-2009/2007.09
+hsp-vacomp:  lic: FLOATING license(s) on SERVER licsrv07.btv.ibm.com
+hsp-vacomp:  lic:  
+hsp-vacomp: Synopsys HSPICE Verilog-A Compiler Version 1.48.101707.
+hsp-vacomp: Copyright (C) 2005 Synopsys, Inc. All Rights Reserved.
+hsp-vacomp: 
+hsp-vacomp: Warning: Redefining macro
+hsp-vacomp: 	['r2_cmc.va',2]
+hsp-vacomp: 	`define LEVEL    1002
+hsp-vacomp: 	                    ^
+hsp-vacomp: Warning: Redefining macro
+hsp-vacomp: 	['r2_cmc.va',3]
+hsp-vacomp: 	`define GFORM            // if GFORM is defined an I=V*g formulation is used, else a V=I*r formulation is used
+hsp-vacomp: 	                                                                                                             ^
+hsp-vacomp: Warning: Redefining macro
+hsp-vacomp: 	['r2_cmc.va',4]
+hsp-vacomp: 	`define VERSION  1.0
+hsp-vacomp: 	                   ^
+hsp-vacomp: Warning: Redefining macro
+hsp-vacomp: 	['r2_cmc.va',5]
+hsp-vacomp: 	`define REVISION 0.0
+hsp-vacomp: 	                   ^
+hsp-vacomp: 
+hsp-vacomp: The CML file is up to date. No compilation necessary.
+hsp-vacomp: 
+hsp-vacomp:  lic: Release hspiceva token(s)

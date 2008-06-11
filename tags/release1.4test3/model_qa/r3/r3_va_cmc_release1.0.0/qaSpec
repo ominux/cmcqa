@@ -1,0 +1,211 @@
+
+//
+// CMC QA test specification file for the r3_cmc model (version 1.0.0)
+//
+
+//
+// Simulator specific information
+//
+
+`ifdef hspice
+nTypeSelectionArguments     r3_cmc type=-1
+pTypeSelectionArguments     r3_cmc type=+1
+scaleParameters             scale shrink m
+`endif
+`ifdef spectre
+nTypeSelectionArguments     r3_cmc type=-1
+pTypeSelectionArguments     r3_cmc type=+1
+scaleParameters             scale shrink m
+`endif
+`ifdef ads
+nTypeSelectionArguments     r3_cmc type=-1
+pTypeSelectionArguments     r3_cmc type=+1
+scaleParameters             m
+keyLetter                   a
+`endif
+`ifdef eldo
+nTypeSelectionArguments     r3_cmc type=-1
+pTypeSelectionArguments     r3_cmc type=+1
+scaleParameters             scale shrink m
+keyLetter                   y
+`endif
+`ifdef mica
+nTypeSelectionArguments     r3_cmc type=-1
+pTypeSelectionArguments     r3_cmc type=+1
+scaleParameters             scale shrink m
+`endif
+
+//
+// General test-independent information
+//
+
+pins                        l g r
+linearScale                 w l wd p1 p2
+areaScale                   a1 a2
+temperature                 27
+checkPolarity               yes
+symmetricPins               l r
+verilogAfile                vacode/r3_cmc.va
+
+//
+// DC tests for various geometries and effects and resistor types
+//
+
+test                        dcWeakDp
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.01 dp=2.0
+
+test                        dcStrongDp
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.1 dp=2.0
+
+test                        dcStrongVsat
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=0.3e-06 l=3.0e-06
+modelParameters             dfinf=0.01 dp=2.0
+
+test                        dcStrongEt
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=0.1e-06 l=100.0e-06
+modelParameters             dfinf=0.01 dp=2.0 rsh=1 gth0=1.0e-12 tc1=10.0e-3 gtha=0.1e-3
+
+test                        dcStrongAll
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=0.2e-06 l=2.0e-06
+modelParameters             dfinf=0.1 dp=2.0 gth0=1.0e-12 tc1=10.0e-3 gtha=20.0e-5 tmax=1000
+
+test                        dcPoly
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=-20.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=60.0e-06 l=60.0e-06
+modelParameters             dfinf=0.0054 dp=293.0 tc1=-0.00207 tc2=5.42e-6 gtha=1.0e-6 gth0=1.0e-12 rsh=4000
+
+test                        dcPplus
+biases                      V(l)=0
+biasList                    V(g)=0,-20
+biasSweep                   V(r)=0,5.0,0.1
+outputs                     I(r)
+instanceParameters          w=1.0e-06 l=5.0e-06 c1=1 c2=1
+modelParameters             dfinf=0.0054 dp=293.0 tc1=0.005 gtha=1.0e-3 gth0=1.0e-12 rsh=20 \
+                            tc1rc=-0.05 rc=10 ecorn=0.4 ecrit=10 du=0.1
+
+test                        dcPolyShort
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=-8.0,8.0,0.1
+outputs                     I(r)
+instanceParameters          w=0.6e-06 l=3.0e-06
+modelParameters             dfinf=0.014 dp=293.0 tc1=-0.0023 tc2=6.91e-6 gtha=2.0e-5 gth0=1.0e-12 rsh=4000
+modelParameters             ecrit=8 ecorn=1.5 du=0.001
+
+test                        dcStrongAll_sw_et=0
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=0.2e-06 l=2.0e-06 sw_et=0
+modelParameters             dfinf=0.1 dp=2.0 gth0=1.0e-12 tc1=10.0e-3 gtha=20.0e-5 tmax=1000
+
+//
+// DC test that drives the model into subthreshold,
+// the diodes are not turned on so there is no gmin current
+//
+
+test                        dcSubthreshold
+biases                      V(l)=0 V(r)=0.1
+biasSweep                   V(g)=0.0,-20.0,-0.05
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.2 dp=2.0
+
+//
+// DC test that turns on diodes and breakdown
+//
+
+test                        dcParasitics
+biases                      V(l)=0 V(r)=0
+biasSweep                   V(g)=-4.0,0.8,0.02
+outputs                     I(g)
+instanceParameters          w=10.0e-6 l=100.0e-6 a1=1.0e-09 p2=220.0e-06
+modelParameters             dfinf=0.01 dp=2.0 isa=1.0e-18 na=1.0 isp=1.0e-14 np=2.0 ibv=1.0e-8 vbv=3.5 nbv=2.0
+
+//
+// Junction capacitance test
+//
+
+test                        acAreaCj
+biases                      V(l)=0 V(r)=0
+biasSweep                   V(g)=-2.0 0.5 0.1
+outputs                     C(g,g)
+instanceParameters          w=10.0e-6 l=100.0e-6 a1=500e-12 a2=500e-12
+modelParameters             dfinf=0.01 dp=2.0 cja=1.0e-15
+
+//
+// Noise
+//
+
+test                        noiseWeakDp
+biases                      V(l)=0
+biasList                    V(g)=0 -20
+biasSweep                   V(r)=1.0,11.0,10.0
+freq                        dec 10 1 1e8
+outputs                     N(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.01 dp=2.0
+modelParameters             kfn=1.0e-13
+
+//
+// Statistics
+//
+// Note: the m variant test will fail for the
+// second and third statistical test as they include
+// mismatch variation, which does not scale with m.
+// The parameters are set so the results should match
+// those of the dcWeakDp test.
+//
+
+test                        statGlobal
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.01 dp=2.0 nsig_rsh=1.0 sig_rsh=5.0 \
+                            rsh=95.1229424500714
+
+test                        statTotal
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6 nsmm_rsh=1.0 sw_mman=1
+modelParameters             dfinf=0.01 dp=2.0 nsig_rsh=1.0 sig_rsh=4.0 \
+                            rsh=95.1229424500714 smm_rsh=31.6227766016838
+
+test                        statTotalMmOff
+biases                      V(l)=0
+biasList                    V(g)=0 -10 -20
+biasSweep                   V(r)=0.0,20.0,0.1
+outputs                     I(r)
+instanceParameters          w=10.0e-6 l=100.0e-6
+modelParameters             dfinf=0.01 dp=2.0 nsig_rsh=1.0 sig_rsh=4.0 \
+                            rsh=95.1229424500714 smm_rsh=94.8683298050514

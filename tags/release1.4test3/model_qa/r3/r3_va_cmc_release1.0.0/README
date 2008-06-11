@@ -1,0 +1,44 @@
+
+The files and directories here are for release 1.0.0 of the r3_cmc model.
+Also included are the programs for running the QA tests provided with the
+model for verification of implementation.
+
+Summary of each file/directory and its contents:
+
+README                     This file.
+veriloga/r3_cmc.va         Verilog-A file that defines the r3_cmc model.
+veriloga/macrosAndDefines_cmc.va
+                           Verilog-A file (included by r3_cmc.va) with standard macros and definitions.
+r3_cmc.txt                 Brief text description of the r3_cmc model (full details are in r3_cmc_v1.0.0_2007Jun12.pdf).
+Makefile                   make file for running the QA tests.
+../lib                     Directory with the code for the CMC ModelQA code
+                           (documentation is at the CMC web site).
+qaSpec                     File with the specifications of the QA tests for r3_cmc.
+reference                  Directory with the reference results for the QA tests.
+results                    Directory with the simulated results for the QA tests for simulator/version/OS.
+
+
+When running the QA tests for the r3_cmc model, some of the tests will report
+results that DIFFER and will look to be "failing" but in fact are correct.
+The specific tests affected are statTotal and statTotalMmOff for the "m" variant.
+These tests include mismatch variations, and mismatch itself in the model varies
+as 1/sqrt(m), hence the results do not exactly scale with m. The differences
+reported should be similar to what is shown below.
+
+****** Running test (mica): statTotal
+     variant: standard            (compared to: reference) MATCH       (exact)
+     variant: Flip_N              (compared to: standard ) MATCH       (exact)
+     variant: noFlip_P            (compared to: standard ) MATCH       (exact)
+     variant: Flip_P              (compared to: standard ) MATCH       (exact)
+     variant: shrink              (compared to: standard ) MATCH       (exact)
+     variant: scale               (compared to: standard ) MATCH       (exact)
+     variant: m                   (compared to: standard ) DIFFER      (max rel error is 0.896%)
+
+****** Running test (mica): statTotalMmOff
+     variant: standard            (compared to: reference) MATCH       (exact)
+     variant: Flip_N              (compared to: standard ) MATCH       (exact)
+     variant: noFlip_P            (compared to: standard ) MATCH       (exact)
+     variant: Flip_P              (compared to: standard ) MATCH       (exact)
+     variant: shrink              (compared to: standard ) MATCH       (exact)
+     variant: scale               (compared to: standard ) MATCH       (exact)
+     variant: m                   (compared to: standard ) DIFFER      (max rel error is 0.984%)
