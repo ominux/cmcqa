@@ -1,0 +1,155 @@
+
+//
+// Example test specification for bsim3v3 (version 3.3.0)
+//
+
+//
+// Simulator specific information
+// These arguments are added to the model card
+// specification to invoke the desired model in
+// different simulators (which can have different
+// names or levels for the same model) and to switch
+// between nType and pType polarities.
+// It is assumed that there are no polarity specific
+// parameters.
+//
+
+`ifdef spice
+nTypeSelectionArguments     pmos level=8 version=3.3.0
+pTypeSelectionArguments     pmos level=8 version=3.3.0
+`endif
+`ifdef hspice
+nTypeSelectionArguments     pmos level=53 version=3.3
+pTypeSelectionArguments     pmos level=53 version=3.3
+scaleParameters             scale
+`endif
+`ifdef spectre
+nTypeSelectionArguments     bsim3v3 type=p version=3.3
+pTypeSelectionArguments     bsim3v3 type=p version=3.3
+scaleParameters             scale
+`endif
+`ifdef ads
+nTypeSelectionArguments     MOSFET Idsmod=8 PMOS=yes Version=3.30
+pTypeSelectionArguments     MOSFET Idsmod=8 PMOS=yes Version=3.30
+`endif
+`ifdef eldo
+nTypeSelectionArguments     pmos level=53 version=3.3
+pTypeSelectionArguments     pmos level=53 version=3.3
+scaleParameters             scale
+`endif
+`ifdef nexxim
+nTypeSelectionArguments     bsim3v3 type=p version=3.3
+pTypeSelectionArguments     bsim3v3 type=p version=3.3
+scaleParameters             scale
+`endif
+`ifdef smartspice
+nTypeSelectionArguments     pmos level=53 version=3.3
+pTypeSelectionArguments     pmos level=53 version=3.3
+scaleParameters             scale
+`endif
+`ifdef mica
+nTypeSelectionArguments     pmos level=9 version=3.3.0
+pTypeSelectionArguments     pmos level=9 version=3.3.0
+scaleParameters             scale shrink
+`endif
+
+//
+// General test-independent information
+//
+
+keyLetter                   m
+pins                        d g s b
+linearScale                 w l ps pd
+areaScale                   as ad
+temperature                 27 -50 150
+checkPolarity               no
+symmetricPins               d s
+scaleParameters             m
+
+//
+// Specific tests
+//
+
+test                        dcSweep
+biases                      V(s)=0 V(b)=0
+biasList                    V(g)=-0.4,-0.6,-0.8,-1.0,-1.2
+biasSweep                   V(d)=-0.1,-1.2,-0.1
+outputs                     I(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+
+test                        acVd
+temperature                 27 150
+biases                      V(s)=0 V(b)=0 V(g)=-1.2
+biasSweep                   V(d)=-0.1,-1.2,-0.1
+outputs                     G(d,g) G(d,d) C(g,s) C(g,d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+
+test                        acFreq
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.2 V(g)=-1.2
+freq                        dec 10 1e3 1e8
+outputs                     C(g,g) C(g,s) C(g,d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+
+test                        noise1
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=1 af=1.2 ef=1.1
+
+test                        noise2
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=2 noia=9.9e18 noib=2.4e3 noic=1.4e-12 em=4.1e7 ef=1.1
+
+test                        noise3
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=3 noia=9.9e18 noib=2.4e3 noic=1.4e-12 em=4.1e7 ef=1.1
+
+test                        noise4
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=4 af=1.2 ef=1.1
+
+test                        noise5
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=5 af=1.2 ef=1.1
+
+test                        noise6
+temperature                 27
+biases                      V(s)=0 V(b)=0 V(d)=-1.0
+biasList                    V(g)=-0.6,-0.8,-1.0
+freq                        dec 10 1e3 1e8
+outputs                     N(d)
+instanceParameters          w=10.0e-6 l=1.0e-6
+modelParameters             parameters/pmosParameters
+modelParameters             noimod=6 noia=9.9e18 noib=2.4e3 noic=1.4e-12 em=4.1e7 ef=1.1

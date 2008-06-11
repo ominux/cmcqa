@@ -1,0 +1,117 @@
+//
+// Example test specification for HICUM L2V2p22
+//
+
+//
+// Simulator specific information
+// These arguments are added to the model card
+// specification to invoke the desired model in
+// different simulators (which can have different
+// names or levels for the same model) and to switch
+// between nType and pType polarities.
+// It is assumed that there are no polarity specific
+// parameters.
+//
+
+`ifdef spice
+// hicum not supported
+`endif
+`ifdef hspice
+//nTypeSelectionArguments     npn level=8 version=2.21
+nTypeSelectionArguments     npn level=8 version=2.22
+`endif
+`ifdef spectre
+//nTypeSelectionArguments     bht type=npn version=2.21
+nTypeSelectionArguments     bht type=npn version=2.22
+`endif
+`ifdef ads
+//nTypeSelectionArguments     HICUM2_21
+nTypeSelectionArguments     HICUM2_22
+`endif
+`ifdef eldo
+//nTypeSelectionArguments     npn subs=1 level=9 version=2.21
+nTypeSelectionArguments     npn subs=1 level=9 version=2.22
+`endif
+`ifdef nexxim
+//nTypeSelectionArguments     bht type=npn version=2.21
+nTypeSelectionArguments     bht type=npn version=2.22
+`endif
+`ifdef smartspice
+// ?
+`endif
+`ifdef mica
+// ?
+`endif
+
+//
+// General test-independent information
+//
+
+keyLetter                   q
+pins                        coll base emit subs
+
+//
+// Specific tests
+//
+
+test                        dcSweep
+temperature                 27 -20 150
+biases                      V(emit)=0 V(subs)=0
+biasList                    V(base)=0.9,1.0,1.1,1.2,1.3
+biasSweep                   V(coll)=0.2,5.0,0.2
+outputs                     I(coll) 
+modelParameters             parameters/npnParameters
+
+test                        acVcoll
+temperature                 27 
+biases                      V(emit)=0 V(subs)=0 V(base)=0.9
+biasSweep                   V(coll)=0.4,5.0,0.2
+outputs                     G(coll,base) G(coll,coll) C(base,emit) C(base,coll)
+modelParameters             parameters/npnParameters
+
+// in the next two tests, max error is 99.9% if G() and C() are specified together
+// but if G() and C() are done separately, max errors are 0.43% and 0.08%.
+
+test                        acFreqYre
+temperature                 27
+biases                      V(emit)=0 V(subs)=0 V(coll)=2.0 V(base)=0.9
+freq                        dec 10 1e3 1e10
+outputs                     G(base,base) G(base,coll) G(coll,base) G(coll,coll) 
+modelParameters             parameters/npnParameters
+
+test                        acFreqYim
+temperature                 27
+biases                      V(emit)=0 V(subs)=0 V(coll)=2.0 V(base)=0.9
+freq                        dec 10 1e3 1e10
+outputs                     C(base,base) C(base,coll) C(coll,base) C(coll,coll) 
+modelParameters             parameters/npnParameters
+
+// in the next two tests, max error is 100% if G() and C() are specified together
+// but if G() and C() are done separately, max errors are 14.8% and 12.3%.
+
+test                        acFreqYreWithNqs
+temperature                 27
+biases                      V(emit)=0 V(subs)=0 V(coll)=2.0 V(base)=0.9
+freq                        dec 10 1e3 1e10
+outputs                     G(base,base) G(base,coll) G(coll,base) G(coll,coll)
+modelParameters             parameters/npnParameters
+modelParameters             flnqs=1 alit=0.45 alqf=0.23
+
+test                        acFreqYimWithNqs
+temperature                 27
+biases                      V(emit)=0 V(subs)=0 V(coll)=2.0 V(base)=0.9
+freq                        dec 10 1e3 1e10
+outputs                     C(base,base) C(base,coll) C(coll,base) C(coll,coll)
+modelParameters             parameters/npnParameters
+modelParameters             flnqs=1 alit=0.45 alqf=0.23
+
+test                        noise1
+temperature                 27
+biases                      V(emit)=0 V(subs)=0 V(coll)=1.0
+biasList                    V(base)=0.9,1.0,1.1,1.2
+freq                        dec 10 1e0 1e8
+outputs                     N(coll) 
+modelParameters             parameters/npnParameters
+
+`ifdef NOT_USED
+`endif
