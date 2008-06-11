@@ -501,8 +501,17 @@ sub generateCommonNetlistInfo {
     foreach $pin (@main::Pin) {push(@Pin_x,"${pin}_x")}
     print OF "subckt mysub (".join(" ",@Pin_x).")";
     foreach $pin (@main::Pin) {
-        if ($main::isFloatingPin{$pin}) { # assumed "dt" thermal pin, no scaling sign change
-            print OF "v_$pin (${pin} ${pin}_x) vsource dc=0";
+        if ($main::isFloatingPin{$pin}) {
+            if ($main::outputNoise && $pin eq $main::Outputs[0]) {
+                if ($variant=~/^m$/) {
+                    $eFactor=sqrt($main::mFactor);
+                } else {
+                    $eFactor=1;
+                }
+                print OF "e_$pin (${pin}_x 0 ${pin} 0) vcvs gain=$eFactor";
+            } else { # assumed "dt" thermal pin, no scaling sign change
+                print OF "v_$pin (${pin} ${pin}_x) vsource dc=0";
+            }
         } elsif ($variant=~/^Flip/ && defined($main::flipPin{$pin})) {
             print OF "e_$pin (${pin}   0 $main::flipPin{$pin}_x 0) vcvs gain=$eFactor";
             print OF "f_$pin ($main::flipPin{$pin}_x 0) cccs probe=e_$pin gain=$fFactor";

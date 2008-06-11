@@ -173,7 +173,11 @@ sub runNoiseTest {
                     if ($main::fMin != $main::fMax) {
                         push(@X,1*$realAdsResults[$Index{"freq"}]);
                     }
-                    push(@Noise,$realAdsResults[$Index{"n_$noisePin.noise"}]**2);
+                    if ($main::isFloatingPin{$noisePin}) {
+                        push(@Noise,$realAdsResults[$Index{"$noisePin.noise"}]**2);
+                    } else {
+                        push(@Noise,$realAdsResults[$Index{"n_$noisePin.noise"}]**2);
+                    }
                     @realAdsResults=();@imagAdsResults=();
                 }
             }
@@ -601,8 +605,17 @@ sub generateCommonNetlistInfo {
     print OF " ";
     print OF "define mysub (".join(" ",@Pin_x).")";
     foreach $pin (@main::Pin) {
-        if ($main::isFloatingPin{$pin}) { # assumed "dt" thermal pin, no scaling sign change
-            print OF "V_Source:v_$pin ${pin} ${pin}_x Vdc=0";
+        if ($main::isFloatingPin{$pin}) {
+            if ($main::outputNoise && $pin eq $main::Outputs[0]) {
+                if ($variant=~/^m$/) {
+                    $eFactor=sqrt($main::mFactor);
+                } else {
+                    $eFactor=1;
+                }
+                print OF "VCVS:e_$pin ${pin} 0 ${pin}_x 0 G=$eFactor";
+            } else { # assumed "dt" thermal pin, no scaling sign change
+                print OF "V_Source:v_$pin ${pin} ${pin}_x Vdc=0";
+            }
         } elsif ($variant=~/^Flip/ && defined($main::flipPin{$pin})) {
             print OF "#uselib \"ckt\", \"VCVS\"";
             print OF "VCVS:e_$pin $main::flipPin{$pin}_x 0 ${pin}_v 0 G=$eFactor";
