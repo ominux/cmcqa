@@ -91,8 +91,10 @@ sub runNoiseTest {
                 }
             }
             print OF "mysub:x_$noisePin ".join(" ",@main::Pin);
-            print OF "SDD:fn_$noisePin 0 n_$noisePin I[1,0]=_c1 C[1]=\"v_$noisePin\"";
-            print OF "R:r_$noisePin n_$noisePin 0 R=1 Noise=no";
+            if (! $main::isFloatingPin{$noisePin}) {
+               print OF "SDD:fn_$noisePin 0 n_$noisePin I[1,0]=_c1 C[1]=\"v_$noisePin\"";
+               print OF "R:r_$noisePin n_$noisePin 0 R=1 Noise=no";
+            }
             print OF "OutputPlan:noiseOutput Type=\"Output\"";
             if ($main::fType eq "lin") {
                 print OF "SweepPlan:noisePlan Start=$main::fMin Stop=$main::fMax Lin=$main::fSteps";
@@ -109,7 +111,11 @@ sub runNoiseTest {
                 print OF "SweepPlan:dcPlan Start=$start Stop=$stop Step=$step";
             }
             print OF "AC:AC1 CalcNoise=yes OutputPlan=\"noiseOutput\" SweepVar=\"freq\" \\";
-            print OF "SweepPlan=\"noisePlan\" NoiseNode=\"n_$noisePin\"";
+            if ($main::isFloatingPin{$noisePin}) {
+                print OF "SweepPlan=\"noisePlan\" NoiseNode=\"$noisePin\"";
+            } else {
+                print OF "SweepPlan=\"noisePlan\" NoiseNode=\"n_$noisePin\"";
+            }
             print OF "ParamSweep:Vsweep SimInstanceName=\"AC1\" SweepVar=\"Vsweep\" SweepPlan=\"dcPlan\"";
             close(OF);
 

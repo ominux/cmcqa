@@ -85,8 +85,11 @@ sub runNoiseTest {
     }
     print OF "x1 (".join(" ",@main::Pin).") mysub";
     $noisePin=$main::Outputs[0];
-    print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
-    print OF "rn (0 n_$noisePin) resistor r=1 isnoisy=no";
+    if (! $main::isFloatingPin{$noisePin}) {
+        print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
+        print OF "rn (0 n_$noisePin) resistor r=1 isnoisy=no";
+        $noisePin="n_$noisePin";
+    }
     for ($j=0;$j<=$#main::Temperature;++$j) {
         print OF "alterT$j alter param=temp value=$main::Temperature[$j]";
         for ($i=0;$i<=$#BiasList;++$i) {
@@ -98,9 +101,9 @@ sub runNoiseTest {
                     print OF "alterT${j}_${i}_$k alter dev=v_$main::biasSweepPin param=dc value=$main::BiasSweepList[$k]";
                 }
                 if ($main::fMin == $main::fMax) {
-                    print OF "noise_t${j}_bl${i}_bs${k} n_$noisePin noise values=[$main::fMin]";
+                    print OF "noise_t${j}_bl${i}_bs${k} $noisePin noise values=[$main::fMin]";
                 } else {
-                    print OF "noise_t${j}_bl${i}_bs${k} n_$noisePin noise start=$main::fMin stop=$main::fMax $main::fType=$main::fSteps";
+                    print OF "noise_t${j}_bl${i}_bs${k} $noisePin noise start=$main::fMin stop=$main::fMax $main::fType=$main::fSteps";
                 }
             }
         }

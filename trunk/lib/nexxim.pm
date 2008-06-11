@@ -69,7 +69,7 @@ sub version {
 
 sub runNoiseTest {
     my($variant,$outputFile)=@_;
-    my($pin,$noisePin,@BiasList,$n);
+    my($pin,$noisePin,$noiseOut,@BiasList,$n);
     my(@netlistfileparts,$netlistfile);
     my($temperature,$biasVoltage,$sweepVoltage);
 
@@ -90,6 +90,11 @@ sub runNoiseTest {
 
     $n=0;
     $noisePin=$main::Outputs[0];
+    if ($main::isFloatingPin{$noisePin}) {
+        $noiseOut = $noisePin;
+    } else {
+        $noiseOut = "n_$noisePin";
+    }
     foreach $temperature (@main::Temperature) {
         foreach $biasVoltage (split(/\s+/,$main::biasListSpec)) {
             foreach $sweepVoltage (@main::BiasSweepList) {
@@ -115,12 +120,14 @@ sub runNoiseTest {
                     }
                 }
                 print OF "x1 (".join(" ",@main::Pin).") mysub";
-                print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
-                print OF "rn (0 n_$noisePin) resistor r=1 isnoisy=no";
+                if (! $main::isFloatingPin{$noisePin}) {
+                    print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
+                    print OF "rn (0 n_$noisePin) resistor r=1 isnoisy=no";
+                }
                 if ($main::fMin == $main::fMax) {
-                    print OF "noise (n_$noisePin) noise values=[$main::fMin]";
+                    print OF "noise ($noiseOut) noise values=[$main::fMin]";
                 } else {
-                    print OF "noise (n_$noisePin) noise start=$main::fMin stop=$main::fMax $main::fType=$main::fSteps";
+                    print OF "noise ($noiseOut) noise start=$main::fMin stop=$main::fMax $main::fType=$main::fSteps";
                 }
                 print OF "tempopt options temp=$temperature";
                 
