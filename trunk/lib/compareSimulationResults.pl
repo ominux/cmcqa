@@ -197,7 +197,7 @@ sub compareResults {
     for ($j=1;$j<=$#Ref;++$j) {
         @RefRes=split(/\s+/,$Ref[$j]);
         @SimRes=split(/\s+/,$Sim[$j]);
-        return("FAIL        (number of quantities simulated are different") if ($#RefRes != $#SimRes);
+        return("FAIL        (number of quantities simulated are different)") if ($#RefRes != $#SimRes);
         for ($i=1;$i<=$#RefRes;++$i) { # ignore first column, this is the sweep variable
             if ($RefRes[$i] !~ /^$main::number$/ || $SimRes[$i] !~ /^$main::number$/) {
                 return("FAIL        (non-numeric results");
