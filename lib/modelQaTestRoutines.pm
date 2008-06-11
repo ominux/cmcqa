@@ -684,7 +684,8 @@ sub platform {
 
     use Config;
     my($osName,$osVer,$archName)=($modelQa::Config{osname},$modelQa::Config{osvers},$modelQa::Config{archname});
- 
+    my($platform);
+    
     if ($osName !~ /win/i) {
         open(UNAME,"uname -p|") or die("ERROR: cannot determine processore and OS information, stopped");
         chomp($archName=<UNAME>);close(UNAME);
@@ -694,7 +695,10 @@ sub platform {
         open(UNAME,"uname -s|");chomp($osName=<UNAME>);close(UNAME);
         open(UNAME,"uname -r|");chomp($osVer =<UNAME>);close(UNAME);
     }
-    return("${archName}_${osName}_${osVer}");
+    $platform = "${archName}_${osName}_${osVer}";
+    $platform =~ s/\(//;
+    $platform =~ s/\)//;
+    return($platform);
 }
 
 1;

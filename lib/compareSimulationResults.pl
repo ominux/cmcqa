@@ -180,10 +180,16 @@ sub compareResults {
     my(@RefRes,@SimRes,$matchType,$mag,$lo,$hi);
 
     return("ERROR: cannot open file $refFile") if (!open(IF,"$refFile"));
-    while (<IF>) {chomp;push(@Ref,$_)}
+    while (<IF>) {
+        s/\s+$//;
+        push(@Ref,$_);
+    }
     close(IF);
     return("ERROR: cannot open file $simFile") if (!open(IF,"$simFile"));
-    while (<IF>) {chomp;push(@Sim,$_)}
+    while (<IF>) {
+        s/\s+$//;
+        push(@Sim,$_);
+    }
     close(IF);
     return("FAIL        (probably from some simulation failure)") if ($#Ref != $#Sim || $#Sim<1);
     return("FAIL        (simulation output quantities differ)")   if ($Ref[0] ne $Sim[0]);

@@ -16,8 +16,8 @@
 package simulate;
 $simulatorCommand="adssim";
 $netlistFile="adsCkt";
- $mFactorVerilogaName="m";  # for LRM2.1
-#$mFactorVerilogaName="_M"; # for LRM2.2
+#$mFactorVerilogaName="m";  # for LRM2.1
+$mFactorVerilogaName="_M"; # for LRM2.2
 use strict;
 
 sub version {
