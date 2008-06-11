@@ -44,6 +44,9 @@ sub version {
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink("$simulate::netlistFile.st0");
+        if (defined($main::verilogaFile)) {
+            unlink("$simulate::netlistFile.val");
+        }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
         }
@@ -159,6 +162,9 @@ sub runNoiseTest {
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink("$simulate::netlistFile.st0");
+        if (defined($main::verilogaFile)) {
+            unlink("$simulate::netlistFile.val");
+        }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
         }
@@ -190,7 +196,7 @@ sub runAcTest {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "* AC simulation for $main::simulatorName";
-    &generateCommonNetlistInfo($variant);
+    &generateCommonNetlistInfo($variant,$main::Temperature[0]);
     @BiasList=split(/\s+/,$main::biasListSpec);
     print OF ".param vbias=$BiasList[0]";
     print OF ".param vsweep=$main::BiasSweepList[0]";
@@ -344,6 +350,9 @@ sub runAcTest {
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink("$simulate::netlistFile.st0");
+        if (defined($main::verilogaFile)) {
+            unlink("$simulate::netlistFile.val");
+        }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
         }
@@ -376,7 +385,7 @@ sub runDcTest {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "* DC simulation for $main::simulatorName";
-    &generateCommonNetlistInfo($variant);
+    &generateCommonNetlistInfo($variant,$main::Temperature[0]);
     @BiasList=split(/\s+/,$main::biasListSpec);
     ($start,$stop,$step)=split(/\s+/,$main::biasSweepSpec);
     $start-=$step;
@@ -478,6 +487,9 @@ sub runDcTest {
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink("$simulate::netlistFile.st0");
+        if (defined($main::verilogaFile)) {
+            unlink("$simulate::netlistFile.val");
+        }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
         }
@@ -489,10 +501,10 @@ sub runDcTest {
 }
 
 sub generateCommonNetlistInfo {
-    my($variant)=$_[0];
+    my($variant,$temperature)=@_;
     my(@Pin_x,$arg,$name,$value,$eFactor,$fFactor,$pin);
     print OF ".option tnom=27"; # default for HSPICE is 25
-    print OF ".temp $main::Temperature[0]";
+    print OF ".temp $temperature";
     if ($variant=~/^scale$/) {
         print OF ".option scale=$main::scaleFactor";
     }
