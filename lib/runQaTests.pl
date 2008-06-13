@@ -31,11 +31,10 @@ Options:
     -lv                    list test variants that are defined
     -nw                    do not print warning messages
     -platform              prints the hardware platform and operating system version
-    -p                     plot results (limited, only standard test variant)
-    -P                     plot results (complete, for all test variants)
     -r                     re-use previously simulated results if they exist
                            (default is to resimulate, even if results exist)
-    -sv                    prints the simulator version being run
+    -sv                    prints the simulator and Verilog-A versions being run
+    -sc simulatorCommand   run the simulator using simulator command (default is defined in simuatorName.pm file)
     -t   TEST              only run test TEST   (can be a comma delimited list)
     -var VAR               only run variant VAR (can be a comma delimited list)
     -v                     verbose mode
@@ -160,6 +159,10 @@ for (;;) {
         $forceSimulation=0;
     } elsif ($ARGV[0]  =~ /^-sv/i) {
         $onlyDoSimulatorVersion=1;
+    } elsif ($ARGV[0]  =~ /^-sc/i) {
+        shift(@ARGV);
+        if ($#ARGV<0) {die("ERROR: no simulator command for -sc option, stopped")}
+        $simulatorCommand=$ARGV[0];
     } elsif ($ARGV[0]  =~ /^-s/) {
         shift(@ARGV);
         if ($#ARGV<0) {die("ERROR: no simulator specified for -s option, stopped")}
@@ -219,9 +222,9 @@ if (!$onlyDoComparison) {
 #
 
 if (!$onlyDoComparison) {
-    $version=&simulate::version();
+    ($version,$vaVersion)=&simulate::version();
     if ($onlyDoSimulatorVersion) {
-        print $version;exit(0);
+        print $version,$vaVersion;exit(0);
     }
 }
 $qaSpecFile=$ARGV[0];

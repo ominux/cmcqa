@@ -13,41 +13,72 @@
 #
 
 package simulate;
-$simulatorCommand="spectre";
+if (defined($main::simulatorCommand)) {
+    $simulatorCommand=$main::simulatorCommand;
+} else {
+    $simulatorCommand="spectre";
+}
 $netlistFile="spectreCkt";
+$dummyVaFile="cmcQaDummy.va";
+$vaVersion="unknown";
 use strict;
 
 sub version {
     my($version);
+    $version="unknown";
+    if (!open(OF,">$simulate::dummyVaFile")) {
+        die("ERROR: cannot open file $simulate::dummyVaFile, stopped");
+    }
+    print OF "";
+    print OF "`include \"discipline.h\"";
+    print OF "module dummy(p,n);";
+    print OF "    inout      p,n;";
+    print OF "    electrical p,n;";
+    print OF "    analog begin";
+    print OF "`ifdef __VAMS_COMPACT_MODELING__";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.2\");";
+    print OF "`else";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.1\");";
+    print OF "`endif";
+    print OF "        I(p,n)  <+ V(p,n);";
+    print OF "    end";
+    print OF "endmodule";
+    print OF "";
+    close(OF);
     if (!open(OF,">$simulate::netlistFile")) {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "";
     print OF "simulator lang=spectre";
     print OF "";
-    print OF "r1 (x 0) resistor r=1";
+    print OF "ahdl_include \"$simulate::dummyVaFile\"";
+    print OF "";
     print OF "v1 (x 0) vsource dc=1";
+    print OF "a1 (x 0) dummy";
     print OF "";
     print OF "op info what=oppoint where=screen";
     print OF "";
     close(OF);
-    $version="unknown";
     if (!open(SIMULATE,"$simulate::simulatorCommand $simulate::netlistFile 2>/dev/null|")) {
         die("ERROR: cannot run $main::simulatorName, stopped");
     }
     while (<SIMULATE>) {
         chomp;
         s/\(/ /g;s/\)/ /g;
-        if (s/^\s*spectre\s+ver\.\s+//) {
+        if (s/^\s*(spectre\s+ver\.|version)\s+//i) {
             ($version=$_)=~s/\s+.*$//;
+        }
+        if (s/^\s*Verilog-A version is:\s*//i) {
+            $simulate::vaVersion=$_;
         }
     }
     close(SIMULATE);
     if (! $main::debug) {
         unlink($simulate::netlistFile);
+        unlink($simulate::dummyVaFile);
         system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.out");
     }
-    return($version);
+    return($version,$simulate::vaVersion);
 }
 
 sub runNoiseTest {
@@ -79,7 +110,12 @@ sub runNoiseTest {
             print OF "i_$pin ($pin 0) isource dc=0";
             print OF "save $pin";
         } else {
-            print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin}";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_$pin ($pin ${pin}_$main::referencePinFor{$pin}) vsource dc=$main::BiasFor{$pin}";
+                print OF "e_${pin} (${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0) vcvs gain=1";
+            } else {
+                print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin}";
+            }
             print OF "save v_$pin:p";
         }
     }
@@ -186,10 +222,10 @@ sub runNoiseTest {
 
 sub runAcTest {
     my($variant,$outputFile)=@_;
-    my($arg,$name,$value,$i,$j,$k,$type,$pin,$mPin,$fPin);
+    my($arg,$name,$value,$i,$j,$k,$type,$pin,$mPin,$fPin,$first_fPin);
     my(@BiasList,@Field,$inData);
     my($temperature,$biasVoltage);
-    my(@X,$omega,%g,%c,$twoPi,$outputLine);
+    my(@X,$omega,%g,%c,%q,$twoPi,$outputLine);
     $twoPi=8.0*atan2(1.0,1.0);
 
 #
@@ -214,7 +250,12 @@ sub runAcTest {
             print OF "i_$pin ($pin 0) isource dc=0";
             print OF "save $pin";
         } else {
-            print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin} mag=0";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_$pin ($pin ${pin}_$main::referencePinFor{$pin}) vsource dc=$main::BiasFor{$pin}";
+                print OF "e_${pin} (${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0) vcvs gain=1";
+            } else {
+                print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin} mag=0";
+            }
             print OF "save v_$pin:p";
         }
     }
@@ -230,6 +271,7 @@ sub runAcTest {
                     print OF "alterT${j}_${i}_$k alter dev=v_$main::biasSweepPin param=dc value=$main::BiasSweepList[$k]";
                 }
                 foreach $pin (@main::Pin) {
+                    next if (!$main::needAcStimulusFor{$pin});
                     print OF "setT${j}_${i}_${k}_$pin alter dev=v_$pin param=mag value=1";
                     if ($main::fMin == $main::fMax) {
                         print OF "acT${j}_${i}_${k}_$pin ac values=[$main::fMin]";
@@ -255,9 +297,11 @@ sub runAcTest {
     }
     close(SIMULATE);
     foreach $mPin (@main::Pin) {
+        if ($main::needAcStimulusFor{$mPin} && !defined($first_fPin)) {$first_fPin=$mPin}
         foreach $fPin (@main::Pin) {
             @{$g{$mPin,$fPin}}=();
             @{$c{$mPin,$fPin}}=();
+            @{$q{$mPin,$fPin}}=();
         }
     }
     if ($main::fMin == $main::fMax) {
@@ -273,6 +317,7 @@ sub runAcTest {
         for ($i=0;$i<=$#BiasList;++$i) {
             for ($k=0;$k<=$#main::BiasSweepList;++$k) {
                 foreach $fPin (@main::Pin) {
+                    next if (!$main::needAcStimulusFor{$fPin});
                     $inData=0;
                     if (! open(IF,"$simulate::netlistFile.raw/acT${j}_${i}_${k}_$fPin.ac")) {
                         die("ERROR: cannot open file $simulate::netlistFile.raw/acT${j}_${i}_${k}_$fPin.ac, stopped");
@@ -285,7 +330,7 @@ sub runAcTest {
                         @Field=split;
                         if ($Field[0] eq "freq") {
                             $omega=$twoPi*$Field[1];
-                            if (($main::fMin != $main::fMax) && ($fPin eq $main::Pin[0])) {
+                            if (($main::fMin != $main::fMax) && ($fPin eq $first_fPin)) {
                                 push(@X,$Field[1]);
                             }
                         }
@@ -296,6 +341,11 @@ sub runAcTest {
                                 push(@{$c{$mPin,$fPin}},-1*$Field[2]/$omega);
                             } else {
                                 push(@{$c{$mPin,$fPin}},$Field[2]/$omega);
+                            }
+                            if (abs($Field[1]) > 1.0e-99) {
+                                push(@{$q{$mPin,$fPin}},$Field[2]/$Field[1]);
+                            } else {
+                                push(@{$q{$mPin,$fPin}},1.0e99);
                             }
                         }
                     }
@@ -332,9 +382,15 @@ sub runAcTest {
                 } else {
                     undef($outputLine);last;
                 }
-            } else {
+            } elsif ($type eq "c") {
                 if (defined(${$c{$mPin,$fPin}}[$i])) {
                     $outputLine.=" ${$c{$mPin,$fPin}}[$i]";
+                } else {
+                    undef($outputLine);last;
+                }
+            } else {
+                if (defined(${$q{$mPin,$fPin}}[$i])) {
+                    $outputLine.=" ${$q{$mPin,$fPin}}[$i]";
                 } else {
                     undef($outputLine);last;
                 }
@@ -388,7 +444,12 @@ sub runDcTest {
             print OF "i_$pin ($pin 0) isource dc=0";
             print OF "save $pin";
         } else {
-            print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin}";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_$pin ($pin ${pin}_$main::referencePinFor{$pin}) vsource dc=$main::BiasFor{$pin}";
+                print OF "e_${pin} (${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0) vcvs gain=1";
+            } else {
+                print OF "v_$pin ($pin 0) vsource dc=$main::BiasFor{$pin}";
+            }
             print OF "save v_$pin:p";
         }
     }
@@ -477,11 +538,13 @@ sub generateCommonNetlistInfo {
     my(@Pin_x,$arg,$name,$value,$eFactor,$fFactor,$pin);
     print OF "simulator lang=spectre\n";
     print OF "printOptions options rawfmt=psfascii\n";
-    if ($variant=~/^scale$/) {
-        print OF "testOptions options scale=$main::scaleFactor";
-    }
-    if ($variant=~/^shrink$/) {
-        print OF "testOptions options scale=".(1.0-$main::shrinkPercent*0.01);
+    if ($simulate::vaVersion eq "LRM2.2") {
+        if ($variant=~/^scale$/) {
+            print OF "testOptions options scale=$main::scaleFactor";
+        }
+        if ($variant=~/^shrink$/) {
+            print OF "testOptions options scale=".(1.0-$main::shrinkPercent*0.01);
+        }
     }
     if ($variant=~/_P/) {
         $eFactor=-1;$fFactor=1;
@@ -526,11 +589,13 @@ sub generateCommonNetlistInfo {
         } else {
             print OF "${main::keyLetter}1 ".join(" ",@main::Pin)." $main::nTypeSelectionArguments";
         }
-        if ($variant=~/^scale$/) {
-            print OF "+ scale=$main::scaleFactor";
-        }
-        if ($variant=~/^shrink$/) {
-            print OF "+ shrink=$main::shrinkPercent";
+        if ($simulate::vaVersion ne "LRM2.2") {
+            if ($variant=~/^scale$/) {
+                print OF "+ scale=$main::scaleFactor";
+            }
+            if ($variant=~/^shrink$/) {
+                print OF "+ shrink=$main::shrinkPercent";
+            }
         }
     } else {
         print OF "${main::keyLetter}1 (".join(" ",@main::Pin).") mymodel";

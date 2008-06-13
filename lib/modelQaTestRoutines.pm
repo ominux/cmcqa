@@ -6,6 +6,8 @@
 #
 #  Rel  Date            Who             Comments
 # ====  ==========      =============   ========
+#  1.4                  Colin McAndrew  Q added as AC output option
+#                                       Unused AC simulations skipped
 #  1.2  06/30/06        Colin McAndrew  Floating node support added
 #                                       Noise simulation added
 #                                       Other general cleanup
@@ -205,6 +207,10 @@ sub processTestSpec {
     }
     undef(%isAnalysisPin);
     undef(@main::Temperature);
+    undef(%main::referencePinFor);
+    foreach $pin (@main::Pin) {
+        $main::needAcStimulusFor{$pin}=0;
+    }
     foreach (@Spec) {
         if (s/^output[s]?\s+//i) {
             s/\(/ /g;s/\)//g;
@@ -218,7 +224,7 @@ sub processTestSpec {
                     }
                     push(@main::Outputs,$Field[$i]);
                 }
-                if ($Field[$i] =~ /^[CG]$/) {
+                if ($Field[$i] =~ /^[CGQ]$/) {
                     $main::outputAc=1;
                     push(@main::Outputs,lc($Field[$i]));
                     ++$i;
@@ -232,6 +238,7 @@ sub processTestSpec {
                         die("ERROR: pin $Field[$i] listed for AC output is not a specified pin, stopped");
                     }
                     $main::Outputs[$#main::Outputs].=" $Field[$i]";
+                    $main::needAcStimulusFor{$Field[$i]}=1;
                     $isAnalysisPin{$Field[$i]}=1;
                 }
                 if ($Field[$i] =~ /^N$/) {
@@ -250,6 +257,8 @@ sub processTestSpec {
             next;
         }
         if (/^biases\s+/i) {
+            s%V\s*\(\s*%V(%;s%\s*\)%)%;
+            s/V\(([a-zA-Z0-9]+),([a-zA-Z0-9]+)\)/V($1_$2)/; # convert V(n1,n2) to V(n1_n2)
             @Field=split(/[\s,]+/,$_);
             for ($i=1;$i<=$#Field;++$i) {
                 if ($Field[$i] !~ /=/) {
@@ -259,6 +268,9 @@ sub processTestSpec {
                 ($pin,$bias)=split("=",$Field[$i]);
                 if ($bias !~ /^$main::number$/) {
                     die("ERROR: biases specifications must be V(pin)=number, stopped");
+                }
+                if ($pin =~ s/_([a-zA-Z0-9]+)$//) { # this a V(n1,n2) pin (not ground) referenced bias
+                    $main::referencePinFor{$pin}=$1;
                 }
                 $main::BiasFor{$pin}=$bias;
             }
@@ -424,8 +436,9 @@ sub processTestSpec {
     if ($main::outputDc && !defined($main::biasSweepSpec)) {
         die("ERROR: no bias sweep spec defined for DC testing, stopped");
     }
-    if ($main::outputNoise && !defined($main::frequencySpec)) {
-        die("ERROR: no frequency spec defined for noise testing, stopped");
+    if ($main::outputNoise && !defined($main::frequencySpec)) { # default for noise is f=1
+        $main::frequencySpec="lin 1 1 1";
+        $main::fType="lin";$main::fSteps=1;$main::fMin=1;$main::fMax=1;
     }
     if ($main::outputAc && !defined($main::frequencySpec)) { # default for AC is omega=1
         $oneOverTwoPi=1.0/(8.0*atan2(1.0,1.0));
@@ -589,7 +602,7 @@ sub processIfdefs {
                     if ($ifdefLevel > $maxIfdefLevel) {$maxIfdefLevel=$ifdefLevel}
                 }
                 if ($Input[$end] =~ /^`end/)  {--$ifdefLevel}
-                if ($Input[$end] =~ /^`else/) {$middle=$end}
+                if ($Input[$end] =~ /^`else/ && $ifdefLevel == 1) {$middle=$end}
                 last if ($ifdefLevel == 0);
             }
             if (($end > $#Input) && ($ifdefLevel > 0)) {
@@ -684,8 +697,7 @@ sub platform {
 
     use Config;
     my($osName,$osVer,$archName)=($modelQa::Config{osname},$modelQa::Config{osvers},$modelQa::Config{archname});
-    my($platform);
-    
+ 
     if ($osName !~ /win/i) {
         open(UNAME,"uname -p|") or die("ERROR: cannot determine processore and OS information, stopped");
         chomp($archName=<UNAME>);close(UNAME);
@@ -695,10 +707,7 @@ sub platform {
         open(UNAME,"uname -s|");chomp($osName=<UNAME>);close(UNAME);
         open(UNAME,"uname -r|");chomp($osVer =<UNAME>);close(UNAME);
     }
-    $platform = "${archName}_${osName}_${osVer}";
-    $platform =~ s/\(//;
-    $platform =~ s/\)//;
-    return($platform);
+    return("${archName}_${osName}_${osVer}");
 }
 
 1;
