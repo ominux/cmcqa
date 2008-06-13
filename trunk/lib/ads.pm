@@ -14,30 +14,85 @@
 #
 
 package simulate;
-$simulatorCommand="adssim";
+if (defined($main::simulatorCommand)) {
+    $simulatorCommand=$main::simulatorCommand;
+} else {
+    $simulatorCommand="adssim";
+}
 $netlistFile="adsCkt";
-#$mFactorVerilogaName="m";  # for LRM2.1
+$dummyVaFile="cmcQaDummy.va";
 $mFactorVerilogaName="_M"; # for LRM2.2
 use strict;
 
 sub version {
-    my($version,@Field);
-    if (!open(SIMULATE,"$simulate::simulatorCommand -version 2>/dev/null|")) {
+    my($version,$vaVersion,@Field);
+    $version="unknown";
+    $vaVersion="unknown";
+    if (!open(OF,">$simulate::dummyVaFile")) {
+        die("ERROR: cannot open file $simulate::dummyVaFile, stopped");
+    }
+    print OF "";
+    print OF "`include \"discipline.h\"";
+    print OF "module dummy(p,n);";
+    print OF "    inout      p,n;";
+    print OF "    electrical p,n;";
+    print OF "    analog begin";
+    print OF "`ifdef __VAMS_COMPACT_MODELING__";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.2\");";
+    print OF "`else";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.1\");";
+    print OF "`endif";
+    print OF "        I(p,n)  <+ V(p,n);";
+    print OF "    end";
+    print OF "endmodule";
+    print OF "";
+    close(OF);
+    if (!open(OF,">$simulate::netlistFile")) {
+        die("ERROR: cannot open file $simulate::netlistFile, stopped");
+    }
+    print OF "; Version determination simulation for ads";
+    print OF "Options UseNutmegFormat=yes ASCII_Rawfile=yes";
+    print OF "Options Temp=27";
+    print OF "";
+    print OF "#load \"veriloga\", \"$simulate::dummyVaFile\";";
+    print OF "";
+    print OF "define mysub (p n)";
+    print OF "dummy:a1 p n \\";
+    print OF "";
+    print OF "end mysub";
+    print OF "";
+    print OF "V_Source:v_n n 0 Vdc=0";
+    print OF "V_Source:v_p p 0 Vdc=0";
+    print OF "mysub:x1 p n";
+    print OF "SweepPlan:dcPlan Start=0 Stop=1 Step=1";
+    print OF "DC:DC1 SweepVar=\"v_p.Vdc\" SweepPlan=\"dcPlan\"";
+    close(OF);
+    #if (!open(SIMULATE,"$simulate::simulatorCommand $simulate::netlistFile 2>&1|")) {
+    if (!open(SIMULATE,"$simulate::simulatorCommand $simulate::netlistFile 2>/dev/null|")) {
         die("ERROR: cannot run $main::simulatorName, stopped");
     }
-    $version="unknown";
     while (<SIMULATE>) {
         chomp;s/^\s+//;s/\s+$//;
         if (/HPEESOFSIM/i) {
             @Field=split;
             $version=$Field[2];
         }
+        if (s/^\s*Verilog-A version is:\s*//i) {
+            $vaVersion=$_;
+            if ($vaVersion eq "LRM2.1") {
+                $simulate::mFactorVerilogaName="m";  # for LRM2.1
+            }
+        }
     }
     close(SIMULATE);
     if (! $main::debug) {
         unlink($simulate::netlistFile);
+        unlink($simulate::dummyVaFile);
+        unlink("$simulate::netlistFile.ds");
+        unlink(".spiceinit");
+        unlink("spectra.raw");
     }
-    return($version);
+    return($version,$vaVersion);
 }
 
 sub runNoiseTest {
@@ -79,15 +134,39 @@ sub runNoiseTest {
                 if ($main::isFloatingPin{$pin}) {
                     print OF "I_Source:i_$pin $pin 0 Idc=0";
                 } elsif ($pin eq $main::biasListPin) {
-                    print OF "V_Source:v_$pin $pin 0 Vdc=$biasVoltage";
+                    if (defined($main::referencePinFor{$pin})) {
+                        print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=$biasVoltage";
+                        print OF "#uselib \"ckt\", \"VCVS\"";
+                        print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                    } else {
+                        print OF "V_Source:v_$pin $pin 0 Vdc=$biasVoltage";
+                    }
                 } elsif ($pin eq $main::biasSweepPin) {
                     if ($stop < $start) { # flip polarity as ADS always does lo->hi sweep
-                        print OF "V_Source:v_$pin 0 $pin Vdc=Vsweep";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "V_Source:v_${pin} ${pin}_$main::referencePinFor{$pin} ${pin} Vdc=Vsweep";
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_$pin 0 $pin Vdc=Vsweep";
+                        }
                     } else {
-                        print OF "V_Source:v_$pin $pin 0 Vdc=Vsweep";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=Vsweep";
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_$pin $pin 0 Vdc=Vsweep";
+                        }
                     }
                 } else {
-                    print OF "V_Source:v_$pin $pin 0 Vdc=$main::BiasFor{$pin}";
+                    if (defined($main::referencePinFor{$pin})) {
+                        print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=$main::BiasFor{$pin}";
+                        print OF "#uselib \"ckt\", \"VCVS\"";
+                        print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                    } else {
+                        print OF "V_Source:v_$pin $pin 0 Vdc=$main::BiasFor{$pin}";
+                    }
                 }
             }
             print OF "mysub:x_$noisePin ".join(" ",@main::Pin);
@@ -220,10 +299,10 @@ sub runNoiseTest {
 
 sub runAcTest {
     my($variant,$outputFile)=@_;
-    my($i,@Field,$arg,$name,$value,$type,$pin,$mPin,$fPin,%NextPin);
-    my(@BiasList,$acStim,$realVal,$imagVal);
+    my($i,@Field,$arg,$name,$value,$type,$mPin,$fPin,%NextPin,$first_fPin);
+    my(@BiasList,$acStim,$realVal,$imagVal,%sign);
     my($start,$stop,$step,$sign,$inResults,%Index,$iVariables);
-    my(@X,$omega,%g,%c,$temperature,$biasVoltage,$sweepVoltage,$twoPi);
+    my(@X,$omega,%g,%c,%q,$temperature,$biasVoltage,$sweepVoltage,$twoPi);
     my(@realAdsResults,@imagAdsResults,$outputLine);
     $twoPi=8.0*atan2(1.0,1.0);
 
@@ -239,9 +318,11 @@ sub runAcTest {
 #
 
     foreach $mPin (@main::Pin) {
+        if ($main::needAcStimulusFor{$mPin} && !defined($first_fPin)) {$first_fPin=$mPin}
         foreach $fPin (@main::Pin) {
             @{$g{$mPin,$fPin}}=();
             @{$c{$mPin,$fPin}}=();
+            @{$q{$mPin,$fPin}}=();
         }
     }
     @X=();
@@ -260,7 +341,9 @@ sub runAcTest {
             print OF "Vsweep = 0 V";
             &generateCommonNetlistInfo($variant);
             foreach $fPin (@main::Pin) {
+                next if (!$main::needAcStimulusFor{$fPin});
                 foreach $mPin (@main::Pin) {
+                    $sign{$mPin}=1.0;
                     if ($mPin eq $fPin) {
                         $acStim=" Vac=1";
                     } else {
@@ -269,16 +352,41 @@ sub runAcTest {
                     if ($main::isFloatingPin{$mPin}) {
                         print OF "I_Source:i_${mPin}_$fPin ${mPin}_$fPin 0 Idc=0";
                     } elsif ($mPin eq $main::biasListPin) {
-                        print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=$biasVoltage$acStim";
+                        if (defined($main::referencePinFor{$mPin})) {
+                            print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin ${mPin}_${fPin}_$main::referencePinFor{$mPin} Vdc=$biasVoltage$acStim";
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_${mPin}_$fPin $main::referencePinFor{$mPin}_$fPin 0 ${mPin}_${fPin}_$main::referencePinFor{$mPin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=$biasVoltage$acStim";
+                        }
                     } elsif ($mPin eq $main::biasSweepPin) {
                         if ($stop < $start) { # flip polarity as ADS always does lo->hi sweep
                             $acStim=~s/1/-1/;
-                            print OF "V_Source:v_${mPin}_$fPin 0 ${mPin}_$fPin Vdc=Vsweep$acStim";
+                            $sign{$mPin}=-1.0;
+                            if (defined($main::referencePinFor{$mPin})) {
+                                print OF "V_Source:v_${mPin}_$fPin ${mPin}_${fPin}_$main::referencePinFor{$mPin} ${mPin}_$fPin Vdc=Vsweep$acStim";
+                                print OF "#uselib \"ckt\", \"VCVS\"";
+                                print OF "VCVS:e_${mPin}_$fPin $main::referencePinFor{$mPin}_$fPin 0 ${mPin}_${fPin}_$main::referencePinFor{$mPin} 0 G=1";
+                            } else {
+                                print OF "V_Source:v_${mPin}_$fPin 0 ${mPin}_$fPin Vdc=Vsweep$acStim";
+                            }
                         } else {
-                            print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=Vsweep$acStim";
+                            if (defined($main::referencePinFor{$mPin})) {
+                                print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin ${mPin}_${fPin}_$main::referencePinFor{$mPin} Vdc=Vsweep$acStim";
+                                print OF "#uselib \"ckt\", \"VCVS\"";
+                                print OF "VCVS:e_${mPin}_$fPin $main::referencePinFor{$mPin}_$fPin 0 ${mPin}_${fPin}_$main::referencePinFor{$mPin} 0 G=1";
+                            } else {
+                                print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=Vsweep$acStim";
+                            }
                         }
                     } else {
-                        print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=$main::BiasFor{$mPin}$acStim";
+                        if (defined($main::referencePinFor{$mPin})) {
+                            print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin ${mPin}_${fPin}_$main::referencePinFor{$mPin} Vdc=$main::BiasFor{$mPin}$acStim";
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_${mPin}_$fPin $main::referencePinFor{$mPin}_$fPin 0 ${mPin}_${fPin}_$main::referencePinFor{$mPin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_${mPin}_$fPin ${mPin}_$fPin 0 Vdc=$main::BiasFor{$mPin}$acStim";
+                        }
                     }
                 }
                 print OF "mysub:x_$fPin ".join("_$fPin ",@main::Pin)."_$fPin ";
@@ -359,11 +467,22 @@ sub runAcTest {
                     $omega=$twoPi*$realAdsResults[$Index{"freq"}];
                     foreach (@main::Outputs) {
                         ($type,$mPin,$fPin)=split(/\s+/,$_);
-                        push(@{$g{$mPin,$fPin}},1*$realAdsResults[$Index{"v_${mPin}_${fPin}.i"}]);
-                        if ($mPin eq $fPin) {
-                            push(@{$c{$mPin,$fPin}},$imagAdsResults[$Index{"v_${mPin}_${fPin}.i"}]/$omega);
-                        } else {
-                            push(@{$c{$mPin,$fPin}},-1*$imagAdsResults[$Index{"v_${mPin}_${fPin}.i"}]/$omega);
+                        if ($type eq "g") {
+                            push(@{$g{$mPin,$fPin}},$sign{$mPin}*$realAdsResults[$Index{"v_${mPin}_${fPin}.i"}]);
+                        }
+                        if ($type eq "c") {
+                            if ($mPin eq $fPin) {
+                                push(@{$c{$mPin,$fPin}},$sign{$mPin}*$imagAdsResults[$Index{"v_${mPin}_${fPin}.i"}]/$omega);
+                            } else {
+                                push(@{$c{$mPin,$fPin}},-$sign{$mPin}*$imagAdsResults[$Index{"v_${mPin}_${fPin}.i"}]/$omega);
+                            }
+                        }
+                        if ($type eq "q") {
+                            if (abs($realAdsResults[$Index{"v_${mPin}_${fPin}.i"}]) > 1.0e-99) {
+                                push(@{$q{$mPin,$fPin}},$imagAdsResults[$Index{"v_${mPin}_${fPin}.i"}]/$realAdsResults[$Index{"v_${mPin}_${fPin}.i"}]);
+                            } else {
+                                push(@{$q{$mPin,$fPin}},1.0e99);
+                            }
                         }
                     }
                     @realAdsResults=();@imagAdsResults=();
@@ -400,9 +519,15 @@ sub runAcTest {
                 } else {
                     undef($outputLine);last;
                 }
-            } else {
+            } elsif ($type eq "c") {
                 if (defined(${$c{$mPin,$fPin}}[$i])) {
                     $outputLine.=" ${$c{$mPin,$fPin}}[$i]";
+                } else {
+                    undef($outputLine);last;
+                }
+            } else {
+                if (defined(${$q{$mPin,$fPin}}[$i])) {
+                    $outputLine.=" ${$q{$mPin,$fPin}}[$i]";
                 } else {
                     undef($outputLine);last;
                 }
@@ -463,15 +588,39 @@ sub runDcTest {
                 if ($main::isFloatingPin{$pin}) {
                     print OF "I_Source:i_$pin $pin 0 Idc=0";
                 } elsif ($pin eq $main::biasListPin) {
-                    print OF "V_Source:v_$pin $pin 0 Vdc=$biasVoltage";
+                    if (defined($main::referencePinFor{$pin})) {
+                        print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=$biasVoltage";
+                        print OF "#uselib \"ckt\", \"VCVS\"";
+                        print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                    } else {
+                        print OF "V_Source:v_$pin $pin 0 Vdc=$biasVoltage";
+                    }
                 } elsif ($pin eq $main::biasSweepPin) {
                     if ($stop < $start) { # flip polarity as ADS always does lo->hi sweep
-                        print OF "V_Source:v_$pin 0 $pin Vdc=".(-1)*$start;
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "V_Source:v_${pin} ${pin}_$main::referencePinFor{$pin} ${pin} Vdc=".(-1)*$start;
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_$pin 0 $pin Vdc=".(-1)*$start;
+                        }
                     } else {
-                        print OF "V_Source:v_$pin $pin 0 Vdc=$start";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=$start";
+                            print OF "#uselib \"ckt\", \"VCVS\"";
+                            print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                        } else {
+                            print OF "V_Source:v_$pin $pin 0 Vdc=$start";
+                        }
                     }
                 } else {
-                    print OF "V_Source:v_$pin $pin 0 Vdc=$main::BiasFor{$pin}";
+                    if (defined($main::referencePinFor{$pin})) {
+                        print OF "V_Source:v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} Vdc=$main::BiasFor{$pin}";
+                        print OF "#uselib \"ckt\", \"VCVS\"";
+                        print OF "VCVS:e_$pin $main::referencePinFor{$pin} 0 ${pin}_$main::referencePinFor{$pin} 0 G=1";
+                    } else {
+                        print OF "V_Source:v_$pin $pin 0 Vdc=$main::BiasFor{$pin}";
+                    }
                 }
             }
             print OF "mysub:x1 ".join(" ",@main::Pin);

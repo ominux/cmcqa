@@ -11,12 +11,18 @@
 #
 
 package simulate;
-$simulatorCommand="eldo";
+if (defined($main::simulatorCommand)) {
+    $simulatorCommand=$main::simulatorCommand;
+} else {
+    $simulatorCommand="eldo";
+}
 $netlistFile="eldoCkt";
 use strict;
 
 sub version {
-    my($version);
+    my($version,$vaVersion);
+    $va="unknown";
+    $vaVersion="unknown";
     if (!open(SIMULATE,"$simulate::simulatorCommand -v 2>/dev/null|")) {
         die("ERROR: cannot run $main::simulatorName, stopped");
     }
@@ -27,7 +33,7 @@ sub version {
         }
     }
     close(SIMULATE);
-    return($version);
+    return($version,$vaVersion);
 }
 
 sub runNoiseTest {

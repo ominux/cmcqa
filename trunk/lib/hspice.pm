@@ -15,12 +15,18 @@
 #
 
 package simulate;
-$simulatorCommand="hspice";
+if (defined($main::simulatorCommand)) {
+    $simulatorCommand=$main::simulatorCommand;
+} else {
+    $simulatorCommand="hspice";
+}
 $netlistFile="hspiceCkt";
 use strict;
 
 sub version {
-    my($version);
+    my($version,$vaVersion);
+    $version="unknown";
+    $vaVersion="unknown";
     if (!open(OF,">$simulate::netlistFile")) {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
@@ -30,7 +36,6 @@ sub version {
     print OF ".op";
     print OF ".end";
     close(OF);
-    $version="unknown";
     if (!open(SIMULATE,"$simulate::simulatorCommand $simulate::netlistFile 2>/dev/null|")) {
         die("ERROR: cannot run $main::simulatorName, stopped");
     }
@@ -55,7 +60,7 @@ sub version {
         unlink("hspice.errors");
         unlink("simout.tmp");
     }
-    return($version);
+    return($version,$vaVersion);
 }
 
 sub runNoiseTest {
@@ -95,11 +100,26 @@ sub runNoiseTest {
                     if ($main::isFloatingPin{$pin}) {
                         print OF "i_$pin $pin 0 0";
                     } elsif ($pin eq $main::biasListPin) {
-                        print OF "v_$pin $pin 0 $biasVoltage";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $biasVoltage";
+                            print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+                        } else {
+                            print OF "v_$pin $pin 0 $biasVoltage";
+                        }
                     } elsif ($pin eq $main::biasSweepPin) {
-                        print OF "v_$pin $pin 0 $sweepVoltage";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $sweepVoltage";
+                            print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+                        } else {
+                            print OF "v_$pin $pin 0 $sweepVoltage";
+                        }
                     } else {
-                        print OF "v_$pin $pin 0 $main::BiasFor{$pin}";
+                        if (defined($main::referencePinFor{$pin})) {
+                            print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $main::BiasFor{$pin}";
+                            print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+                        } else {
+                            print OF "v_${pin} ${pin} 0 $main::BiasFor{$pin}";
+                        }
                     }
                 }
                 print OF "x1 ".join(" ",@main::Pin)." mysub";
@@ -181,9 +201,9 @@ sub runNoiseTest {
 
 sub runAcTest {
     my($variant,$outputFile)=@_;
-    my($arg,$name,$value,$type,$pin,$mPin,$fPin,%NextPin);
-    my(@BiasList,$i,@Field);
-    my(@X,$omega,%g,%c,$twoPi,$temperature,$biasVoltage,$sweepVoltage);
+    my($arg,$name,$value,$type,$pin,$mPin,$fPin,%NextPin,%PrevPin,$first_fPin);
+    my(@BiasList,$i,$j,@Field);
+    my(@X,$omega,%g,%c,%q,$twoPi,$temperature,$biasVoltage,$sweepVoltage);
     my($inData,$inResults,$outputLine);
     $twoPi=8.0*atan2(1.0,1.0);
 
@@ -198,6 +218,12 @@ sub runAcTest {
 #   of this subckt.
 #
 
+    foreach $mPin (@main::Pin) {
+        if ($main::needAcStimulusFor{$mPin}) {
+            $first_fPin=$mPin;
+            last;
+        }
+    }
     if (!open(OF,">$simulate::netlistFile")) {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
@@ -207,7 +233,7 @@ sub runAcTest {
     print OF ".param vbias=$BiasList[0]";
     print OF ".param vsweep=$main::BiasSweepList[0]";
     foreach $pin (@main::Pin) {
-        if ($pin eq $main::Pin[0]) {
+        if ($pin eq $first_fPin) {
             print OF ".param ac_$pin=1";
         } else {
             print OF ".param ac_$pin=0";
@@ -215,37 +241,61 @@ sub runAcTest {
         if ($main::isFloatingPin{$pin}) {
             print OF "i_$pin $pin 0 0";
         } elsif ($pin eq $main::biasListPin) {
-            print OF "v_$pin $pin 0 vbias ac ac_$pin";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} vbias ac ac_$pin";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 vbias ac ac_$pin";
+            }
         } elsif ($pin eq $main::biasSweepPin) {
-            print OF "v_$pin $pin 0 vsweep ac ac_$pin";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} vsweep ac ac_$pin";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 vsweep ac ac_$pin";
+            }
         } else {
-            print OF "v_$pin $pin 0 $main::BiasFor{$pin} ac ac_$pin";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $main::BiasFor{$pin} ac ac_$pin";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 $main::BiasFor{$pin} ac ac_$pin";
+            }
         }
     }
     print OF "x1 ".join(" ",@main::Pin)." mysub";
     print OF ".ac $main::frequencySpec";
     foreach $pin (@main::Pin) {print OF ".print ac ir(v_$pin) ii(v_$pin)"}
-    $NextPin{$main::Pin[0]}=$main::Pin[$#main::Pin];
-    for ($i=1;$i<=$#main::Pin;++$i) {
-        $NextPin{$main::Pin[$i]}=$main::Pin[$i-1];
+    for ($i=0;$i<=$#main::Pin;++$i) {
+        next if (!$main::needAcStimulusFor{$main::Pin[$i]});
+        $j=$i;
+        while (1) {
+            --$j;
+            $j=$#main::Pin if ($j < 0);
+            if ($main::needAcStimulusFor{$main::Pin[$j]}) {
+                $PrevPin{$main::Pin[$i]}=$main::Pin[$j];
+                last;
+            }
+        }
     }
     foreach $temperature (@main::Temperature) {
         foreach $biasVoltage (@BiasList) {
             foreach $sweepVoltage (@main::BiasSweepList) {
                 foreach $pin (@main::Pin) {
+                    next if (!$main::needAcStimulusFor{$pin});
                     next if ($temperature == $main::Temperature[0] && $biasVoltage == $BiasList[0]
-                             && $sweepVoltage == $main::BiasSweepList[0] && $pin eq $main::Pin[0]);
+                             && $sweepVoltage == $main::BiasSweepList[0] && $pin eq $first_fPin);
                     print OF ".alter";
-                    if ($biasVoltage == $BiasList[0] && $sweepVoltage == $main::BiasSweepList[0] && $pin eq $main::Pin[0]) {
+                    if ($biasVoltage == $BiasList[0] && $sweepVoltage == $main::BiasSweepList[0] && $pin eq $first_fPin) {
                         print OF ".temp $temperature";
                     }
                     if ($sweepVoltage == $main::BiasSweepList[0] && $pin eq $main::Pin[0]) {
                         print OF ".param vbias=$biasVoltage";
                     }
-                    if ($pin eq $main::Pin[0]) {
+                    if ($pin eq $first_fPin) {
                         print OF ".param vsweep=$sweepVoltage";
                     }
-                    print OF ".param ac_$NextPin{$pin}=0";
+                    print OF ".param ac_$PrevPin{$pin}=0";
                     print OF ".param ac_$pin=1";
                 }
             }
@@ -262,12 +312,21 @@ sub runAcTest {
         foreach $fPin (@main::Pin) {
             @{$g{$mPin,$fPin}}=();
             @{$c{$mPin,$fPin}}=();
+            @{$q{$mPin,$fPin}}=();
         }
     }
-    for ($i=0;$i<$#main::Pin;++$i) {
-        $NextPin{$main::Pin[$i]}=$main::Pin[$i+1];
+    for ($i=0;$i<=$#main::Pin;++$i) {
+        next if (!$main::needAcStimulusFor{$main::Pin[$i]});
+        $j=$i;
+        while (1) {
+            ++$j;
+            $j=0 if ($j > $#main::Pin);
+            if ($main::needAcStimulusFor{$main::Pin[$j]}) {
+                $NextPin{$main::Pin[$i]}=$main::Pin[$j];
+                last;
+            }
+        }
     }
-    $NextPin{$main::Pin[$#main::Pin]}=$main::Pin[0];
     if (!open(SIMULATE,"$simulate::simulatorCommand $simulate::netlistFile 2>/dev/null|")) {
         die("ERROR: cannot run $main::simulatorName, stopped");
     }
@@ -280,7 +339,7 @@ sub runAcTest {
             }
         }
     }
-    $fPin=$main::Pin[0];
+    $fPin=$first_fPin;
     while (<SIMULATE>) {
         chomp;
         if (/ac\s+analysis/i) {$inResults=1;$inData=0;next}
@@ -306,6 +365,11 @@ sub runAcTest {
             push(@{$c{$mPin,$fPin}},&modelQa::unScale($Field[2])/$omega);
         } else {
             push(@{$c{$mPin,$fPin}},-1*&modelQa::unScale($Field[2])/$omega);
+        }
+        if (abs(&modelQa::unScale($Field[1])) > 1.0e-99) {
+            push(@{$q{$mPin,$fPin}},&modelQa::unScale($Field[2])/&modelQa::unScale($Field[1]));
+        } else {
+            push(@{$q{$mPin,$fPin}},1.0e99);
         }
     }
     close(SIMULATE);
@@ -337,9 +401,15 @@ sub runAcTest {
                 } else {
                     undef($outputLine);last;
                 }
-            } else {
+            } elsif ($type eq "c") {
                 if (defined(${$c{$mPin,$fPin}}[$i])) {
                     $outputLine.=" ${$c{$mPin,$fPin}}[$i]";
+                } else {
+                    undef($outputLine);last;
+                }
+            } else {
+                if (defined(${$q{$mPin,$fPin}}[$i])) {
+                    $outputLine.=" ${$q{$mPin,$fPin}}[$i]";
                 } else {
                     undef($outputLine);last;
                 }
@@ -400,11 +470,26 @@ sub runDcTest {
         if ($main::isFloatingPin{$pin}) {
             print OF "i_$pin $pin 0 0";
         } elsif ($pin eq $main::biasListPin) {
-            print OF "v_$pin $pin 0 vbias";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} vbias";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 vbias";
+            }
         } elsif ($pin eq $main::biasSweepPin) {
-            print OF "v_$pin $pin 0 $start";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $start";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 $start";
+            }
         } else {
-            print OF "v_$pin $pin 0 $main::BiasFor{$pin}";
+            if (defined($main::referencePinFor{$pin})) {
+                print OF "v_${pin} ${pin} ${pin}_$main::referencePinFor{$pin} $main::BiasFor{$pin}";
+                print OF "e_${pin} ${pin}_$main::referencePinFor{$pin} 0 $main::referencePinFor{$pin} 0 1";
+            } else {
+                print OF "v_${pin} ${pin} 0 $main::BiasFor{$pin}";
+            }
         }
     }
     print OF "x1 ".join(" ",@main::Pin)." mysub";
