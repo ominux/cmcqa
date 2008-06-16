@@ -95,6 +95,7 @@ undef($acClip);undef($acNdigit);undef($acRelTol);
 undef($noiseClip);undef($noiseNdigit);undef($noiseRelTol);
 undef($mFactor);undef($shrinkPercent);undef($scaleFactor);undef(%TestSpec);
 undef($refrnceDirectory);
+undef($simulatorCommand);
 
 #
 #   These are the tolerances used to compare results
