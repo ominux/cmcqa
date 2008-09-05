@@ -129,9 +129,9 @@ sub runNoiseTest {
                 }
                 print OF ".ac $main::frequencySpec";
                 if ($main::isFloatingPin{$noisePin}) {
-                    print OF ".noise v($noisePin) vin $main::frequencySpec";
+                    print OF ".noise v($noisePin) vin";
                 } else {
-                    print OF ".noise v(n_$noisePin) vin $main::frequencySpec";
+                    print OF ".noise v(n_$noisePin) vin";
                 }
                 print OF ".print noise onoise";
                 print OF ".end";
