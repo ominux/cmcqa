@@ -242,16 +242,28 @@ sub processTestSpec {
                     $isAnalysisPin{$Field[$i]}=1;
                 }
                 if ($Field[$i] =~ /^N$/) {
+                    my($noi1,$noi2);
                     $main::outputNoise=1;
                     ++$i;
-                    if (!$main::isPin{$Field[$i]}) {
-                        die("ERROR: pin $Field[$i] listed for noise output is not a specified pin, stopped");
+                    $noi1 = $Field[$i];
+                    $isAnalysisPin{$noi1}=1;
+                    if (!$main::isPin{$noi1}) {
+                        die("ERROR: pin $noi1 listed for noise output is not a specified pin, stopped");
                     }
                     if ($#main::Outputs==0) {
                         die("ERROR: can only specify one pin for noise output, stopped");
                     }
-                    push(@main::Outputs,$Field[$i]);
-                    $isAnalysisPin{$Field[$i]}=1;
+                    push(@main::Outputs,$noi1);
+                    ++$i;
+                    if ($i <= $#Field) {
+                        $noi2 = $Field[$i];
+                        $isAnalysisPin{$noi2}=1;
+                        if (!$main::isPin{$noi2}) {
+                            die("ERROR: pin $noi2 listed for noise output is not a specified pin, stopped");
+                        }
+                        $main::outputNoise=2;
+                        push(@main::Outputs,$noi2);
+                    }
                 }
             }
             next;
@@ -328,6 +340,26 @@ sub processTestSpec {
             }
             $main::biasListSpec=join(" ",@Field[1..$#Field]);
             $main::BiasFor{$main::biasListPin}=$Field[1];
+            next;
+        }
+        if (s/^verilogAfile\s+//i) {
+            $main::verilogaFile=$_;
+            if (! -f $main::verilogaFile) {
+                die("ERROR: cannot find file $main::verilogaFile, stopped");
+            }
+            next;
+        }
+        if (s/^(pins|terminals)\s+//i) {
+            foreach $pin (@main::Pin) {
+                $main::isPin{$pin}=0;
+            }
+            @main::Pin = split(/[\s,]+/,$_);
+            foreach $pin (@main::Pin) {
+                $main::isPin{$pin}=1;
+                if ($pin !~ /^[a-zA-Z][a-zA-Z0-9]*$/) { # underscores are not allowed
+                    die("ERROR: bad pin name specification $pin, stopped");
+                }
+            }
             next;
         }
         if (s/^instanceParameters\s+//i) {
@@ -430,7 +462,7 @@ sub processTestSpec {
     if (!defined(@main::Temperature)) {
         @main::Temperature=@main::DefaultTemperature;
     }
-    if (abs($main::outputDc+$main::outputAc+$main::outputNoise-1) > 0.001) {
+    if (abs($main::outputDc+$main::outputAc+($main::outputNoise>0)-1) > 0.001) {
         die("ERROR: outputs specified must be one of DC, AC or noise, stopped");
     }
     if ($main::outputDc && !defined($main::biasSweepSpec)) {
@@ -473,8 +505,13 @@ sub processTestSpec {
         } else {
             $main::biasSweepPin=$main::Pin[0];
         }
-        $main::biasSweepSpec="$main::BiasFor{$main::biasSweepPin} $main::BiasFor{$main::biasSweepPin} 0"; 
-        @main::BiasSweepList=($main::BiasFor{$main::biasSweepPin});
+        if (!defined($main::BiasFor{$main::biasSweepPin})) {
+            $main::biasSweepSpec="0 0 0"; 
+            @main::BiasSweepList="vin";
+        } else {
+            $main::biasSweepSpec="$main::BiasFor{$main::biasSweepPin} $main::BiasFor{$main::biasSweepPin} 0"; 
+            @main::BiasSweepList=($main::BiasFor{$main::biasSweepPin});
+        }
     } elsif (defined($main::isFloatingPin{$main::biasSweepPin})) {
         die("ERROR: a bias sweep cannot be specified for a floating pin, stopped");
     }
