@@ -178,11 +178,10 @@ sub runNoiseTest {
         printf OF ("Freq");
     }
     if ($main::outputNoise == 2) {
-        printf OF (" N($noisePin,$main::Outputs[1])");
+        print OF (" N($noisePin,$main::Outputs[1])");
     } else {
-        printf OF (" N($noisePin)");
+        print OF (" N($noisePin)");
     }
-    printf OF ("\n");
     for ($i=0;$i<=$#X;++$i) {
         if (defined($Noise[$i])) {printf OF ("$X[$i] $Noise[$i]\n")}
     }
