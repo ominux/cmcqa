@@ -115,7 +115,11 @@ sub runNoiseTest {
 #
 
     @X=();@Noise=();
-    $noisePin=$main::Outputs[0];
+    if ($main::outputNoise == 2) {
+        $noisePin="$main::Outputs[0]_$main::Outputs[1]";
+    } else {
+        $noisePin=$main::Outputs[0];
+    }
     ($start,$stop,$step)=split(/\s+/,$main::biasSweepSpec);
     foreach $temperature (@main::Temperature) {
         foreach $biasVoltage (split(/\s+/,$main::biasListSpec)) {
@@ -170,7 +174,10 @@ sub runNoiseTest {
                 }
             }
             print OF "mysub:x_$noisePin ".join(" ",@main::Pin);
-            if (! $main::isFloatingPin{$noisePin}) {
+            if ($main::outputNoise == 2) {
+                print OF "#uselib \"ckt\", \"VCVS\"";
+                print OF "VCVS:e_$noisePin $noisePin 0 $main::Outputs[0] $main::Outputs[1] G=1";
+            } elsif (! $main::isFloatingPin{$noisePin}) {
                print OF "SDD:fn_$noisePin 0 n_$noisePin I[1,0]=_c1 C[1]=\"v_$noisePin\"";
                print OF "R:r_$noisePin n_$noisePin 0 R=1 Noise=no";
             }
@@ -190,7 +197,7 @@ sub runNoiseTest {
                 print OF "SweepPlan:dcPlan Start=$start Stop=$stop Step=$step";
             }
             print OF "AC:AC1 CalcNoise=yes OutputPlan=\"noiseOutput\" SweepVar=\"freq\" \\";
-            if ($main::isFloatingPin{$noisePin}) {
+            if ($main::outputNoise == 2 || $main::isFloatingPin{$noisePin}) {
                 print OF "SweepPlan=\"noisePlan\" NoiseNode=\"$noisePin\"";
             } else {
                 print OF "SweepPlan=\"noisePlan\" NoiseNode=\"n_$noisePin\"";
@@ -252,7 +259,7 @@ sub runNoiseTest {
                     if ($main::fMin != $main::fMax) {
                         push(@X,1*$realAdsResults[$Index{"freq"}]);
                     }
-                    if ($main::isFloatingPin{$noisePin}) {
+                    if ($main::outputNoise == 2 || $main::isFloatingPin{$noisePin}) {
                         push(@Noise,$realAdsResults[$Index{"$noisePin.noise"}]**2);
                     } else {
                         push(@Noise,$realAdsResults[$Index{"n_$noisePin.noise"}]**2);
@@ -276,8 +283,10 @@ sub runNoiseTest {
     } else {
         printf OF ("Freq");
     }
-    foreach (@main::Outputs) {
-        printf OF (" N($_)");
+    if ($main::outputNoise == 2) {
+        printf OF (" N($main::Outputs[0],$main::Outputs[1])");
+    } else {
+        printf OF (" N($main::Outputs[0])");
     }
     printf OF ("\n");
     for ($i=0;$i<=$#X;++$i) {
@@ -761,6 +770,7 @@ sub generateCommonNetlistInfo {
                 } else {
                     $eFactor=1;
                 }
+                print OF "#uselib \"ckt\", \"VCVS\"";
                 print OF "VCVS:e_$pin ${pin} 0 ${pin}_x 0 G=$eFactor";
             } else { # assumed "dt" thermal pin, no scaling sign change
                 print OF "V_Source:v_$pin ${pin} ${pin}_x Vdc=0";

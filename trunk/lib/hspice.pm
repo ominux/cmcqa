@@ -123,15 +123,20 @@ sub runNoiseTest {
                     }
                 }
                 print OF "x1 ".join(" ",@main::Pin)." mysub";
-                if (! $main::isFloatingPin{$noisePin}) {
-                    print OF "fn 0 n_$noisePin v_$noisePin 1";
-                    print OF "rn 0 n_$noisePin rmod";
-                }
-                print OF ".ac $main::frequencySpec";
-                if ($main::isFloatingPin{$noisePin}) {
-                    print OF ".noise v($noisePin) vin";
+                if ($main::outputNoise == 2) {
+                    print OF ".ac $main::frequencySpec";
+                    print OF ".noise v($noisePin,$main::Outputs[1]) vin";
                 } else {
-                    print OF ".noise v(n_$noisePin) vin";
+                    if (! $main::isFloatingPin{$noisePin}) {
+                        print OF "fn 0 n_$noisePin v_$noisePin 1";
+                        print OF "rn 0 n_$noisePin rmod";
+                    }
+                    print OF ".ac $main::frequencySpec";
+                    if ($main::isFloatingPin{$noisePin}) {
+                        print OF ".noise v($noisePin) vin";
+                    } else {
+                        print OF ".noise v(n_$noisePin) vin";
+                    }
                 }
                 print OF ".print noise onoise";
                 print OF ".end";
@@ -172,8 +177,10 @@ sub runNoiseTest {
     } else {
         printf OF ("Freq");
     }
-    foreach (@main::Outputs) {
-        printf OF (" N($_)");
+    if ($main::outputNoise == 2) {
+        printf OF (" N($noisePin,$main::Outputs[1])");
+    } else {
+        printf OF (" N($noisePin)");
     }
     printf OF ("\n");
     for ($i=0;$i<=$#X;++$i) {
