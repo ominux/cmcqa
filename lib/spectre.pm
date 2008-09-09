@@ -121,7 +121,9 @@ sub runNoiseTest {
     }
     print OF "x1 (".join(" ",@main::Pin).") mysub";
     $noisePin=$main::Outputs[0];
-    if (! $main::isFloatingPin{$noisePin}) {
+    if ($main::outputNoise != 2) {
+        $noisePin="($noisePin,$main::Outputs[1])";
+    } elsif (! $main::isFloatingPin{$noisePin}) {
         print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
         print OF "rn (0 n_$noisePin) resistor r=1 isnoisy=no";
         $noisePin="n_$noisePin";
@@ -133,7 +135,7 @@ sub runNoiseTest {
                 print OF "alterT${j}_$i alter dev=v_$main::biasListPin param=dc value=$BiasList[$i]";
             }
             for ($k=0;$k<=$#main::BiasSweepList;++$k) {
-                if ($main::biasSweepPin ne "dummyPinNameThatIsNeverUsed") {
+                if (!$main::isFloatingPin{$main::biasSweepPin} && $main::biasSweepPin ne "dummyPinNameThatIsNeverUsed") {
                     print OF "alterT${j}_${i}_$k alter dev=v_$main::biasSweepPin param=dc value=$main::BiasSweepList[$k]";
                 }
                 if ($main::fMin == $main::fMax) {
@@ -201,10 +203,11 @@ sub runNoiseTest {
     } else {
          printf OF ("Freq");
     }
-    foreach (@main::Outputs) {
-        printf OF (" N($_)");
+    if ($main::outputNoise == 2) {
+        print OF (" N($main::Outputs[0],$main::Outputs[1])");
+    } else {
+        print OF (" N($main::Outputs[0])");
     }
-    printf OF ("\n");
     for ($i=0;$i<=$#X;++$i) {
         if (defined($Noise[$i])) {printf OF ("$X[$i] $Noise[$i]\n")}
     }
