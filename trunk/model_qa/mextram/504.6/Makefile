@@ -47,7 +47,7 @@ all:	spice hspice spectre ads eldo nexxim smartspice
 spice:
 	@-echo ""; \
 	localPlatform=`$(testProgramName) -platform` ; \
-	localVersion=`$(testProgramName) -sv -s spice $(qaSpecFile)` ; \
+        localVersion=`$(testProgramName) -sv -s $@ $(qaSpecFile) | awk '{print $$1}'` ; \
 	localVersionAndPlatform=$$localVersion._.$$localPlatform ; \
 	echo "******"; \
 	echo "****** $(qaSpecFile) tests for spice"; \
