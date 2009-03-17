@@ -518,7 +518,7 @@ sub runDcTest {
 }
 
 sub generateCommonNetlistInfo {
-    my($variant,$temperature)=$_;
+    my($variant,$temperature)=@_;
     my(@Pin_x,$arg,$name,$value,$eFactor,$fFactor,$pin,$vlaName,@SelectionArgs);
     print OF ".option numdgt=6";
     print OF ".option gmin=1e-30";
