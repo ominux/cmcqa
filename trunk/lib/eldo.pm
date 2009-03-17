@@ -191,7 +191,7 @@ sub runAcTest {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "* AC simulation for $main::simulatorName";
-    &generateCommonNetlistInfo($variant);
+    &generateCommonNetlistInfo($variant,$main::Temperature[0]);
     @BiasList=split(/\s+/,$main::biasListSpec);
     print OF ".param vbias=$BiasList[0]";
     print OF ".param vsweep=$main::BiasSweepList[0]";
@@ -392,7 +392,7 @@ sub runDcTest {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "* DC simulation for $main::simulatorName";
-    &generateCommonNetlistInfo($variant);
+    &generateCommonNetlistInfo($variant,$main::Temperature[0]);
     @BiasList=split(/\s+/,$main::biasListSpec);
     ($start,$stop,$step)=split(/\s+/,$main::biasSweepSpec);
     $start-=$step;
@@ -518,13 +518,13 @@ sub runDcTest {
 }
 
 sub generateCommonNetlistInfo {
-    my($variant)=$_[0];
+    my($variant,$temperature)=$_;
     my(@Pin_x,$arg,$name,$value,$eFactor,$fFactor,$pin,$vlaName,@SelectionArgs);
     print OF ".option numdgt=6";
     print OF ".option gmin=1e-30";
     print OF ".option compat";
     print OF ".option tnom=27";
-    print OF ".temp $main::Temperature[0]";
+    print OF ".temp $temperature";
     if ($variant=~/^scale$/) {
         print OF ".option scale=$main::scaleFactor";
     }
