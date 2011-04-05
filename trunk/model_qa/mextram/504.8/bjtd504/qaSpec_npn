@@ -1,0 +1,53 @@
+
+//
+// Test specification for Mextram 504.7 bjtd504
+//
+// without substrate
+// without self-heating
+
+//
+// Simulator specific information
+// These arguments are added to the model card
+// specification to invoke the desired model in
+// different simulators (which can have different
+// names or levels for the same model).
+// The purpose of these tests is to address
+// polarity specific parameters for npn transistors.
+//
+
+`ifdef hspice
+TypeSelectionArguments     bjtd504va TYPE=1
+keyLetter                   x
+verilogaFile                ../vacode/bjtd504.va
+`endif
+
+`ifdef ads
+// -- VERILOG A --
+TypeSelectionArguments     bjtd504va level=504 TYPE=1
+keyLetter                   q
+verilogaFile                ../vacode/bjtd504.va
+
+`endif
+
+`ifdef adsSiMKit
+// SiMKit
+`define MULT_INSTANCE
+TypeSelectionArguments     bjtd504 level=504 Gender=1
+keyLetter                   x
+
+`endif
+
+//
+// General test-independent information
+//
+
+pins                        c b e
+checkPolarity               n
+
+//
+// Specific tests for npn variant
+//
+
+// avalanche tests
+
+`include ../test_specs/avalanche_npn.tests

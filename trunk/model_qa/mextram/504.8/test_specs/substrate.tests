@@ -1,0 +1,107 @@
+test                        RGummel_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_highT_Is
+temperature                 100
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_No_EXMOD
+temperature                 25 100
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(e) I(b) I(s)
+`include parameters.inc
+modelParameters             exmod=0
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_No_EXMOD_Is
+temperature                 25 100
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             exmod=0
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_1_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9 rcblx=1.5 rcbli=1.5
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_2_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9.0 rcblx=1.75 rcbli=1.25
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_3_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9.0 rcbli=2.75 rcblx=0.25
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_4_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9.0 rcbli=3.0 rcblx=0.0
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_5_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9.0 rcblx=3.0 rcbli=0.0
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_6_Is
+temperature                 25
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9.0 rcblx=5.0 rcbli=0.0
+`include ../test_specs/set_mult.inc
+
+test                        RGummel_dRc_ACBL_Is
+temperature                 100
+biases                      V(c)=0 V(e)=1.0
+`include substrate_bias.inc
+biasSweep                   V(b)=0.5,1.1,0.01
+outputs                     I(s)
+`include parameters.inc
+modelParameters             rcc=9 rcblx=1.5 rcbli=1.5 acbl=0.39
+`include ../test_specs/set_mult.inc

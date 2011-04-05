@@ -1,0 +1,53 @@
+Mextram 504.8
+
+Verilog-A source code, 
+Delft University of Technology, 2009.
+- RvdT.
+
+
+========================================================================
+HISTORY
+========================================================================
+
+Mextram 504.8 alpha.3 was proposed at the CMC at the 2009 Q1 meeting 
+in Los Angeles for standardization.  
+It was accepted as the next standard Mextram model.
+
+------------------------------------------------------------------------
+
+Mextram 504.8 alpha.4 and Mextram 504.8 alpha.5 were experimental
+versions at Delft university before the 2009 Q1 CMC meeting, and were
+never distributed.
+------------------------------------------------------------------------
+
+Mextram 504.8 alpha.6 (May 2009)
+
+
+- with respect to Mextram 504.8 alpha.3, the name of the OP-info variable 
+
+    > OP_izeb  = Izteb ;        // Zener tunneling current
+
+  was changed in Mextram 504.8 alpha.6 to:
+ 
+   < OP_izteb  = Izteb ;        // Zener tunneling current
+------------------------------------------------------------------------
+Mextram 504.8_beta.0 (May 2009)
+
+Without further change Mextram 504.8 alpha.6 was renamed to Mextram
+504.8_beta.0 (May 2009) to become the first public beta release of Mextram
+504.8.
+
+------------------------------------------------------------------------
+Mextram 504.8 (June 2009)
+
+- bugfix with respect to 504.8_beta.0 : 
+  the default value of model parameter VGZEB was changed 
+  from 1.17 to 1.15 in the verilog-A implementation.
+
+
+
+
+
+
+
+

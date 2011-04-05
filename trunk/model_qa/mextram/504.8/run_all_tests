@@ -1,0 +1,16 @@
+#!/bin/csh
+cd bjt504
+run_all_tests_bjt504 $1
+cd ..
+
+cd bjt504t
+run_all_tests_bjt504t $1
+cd ..
+
+cd bjtd504
+run_all_tests_bjtd504 $1
+cd ..
+
+cd bjtd504t
+run_all_tests_bjtd504t $1
+cd ..
