@@ -1,0 +1,1 @@
+modelParameters             parameters/bjt504_Parameters
