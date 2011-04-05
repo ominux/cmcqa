@@ -1,0 +1,38 @@
+Delft University of Technology
+June 2009
+RvdT.
+
+
+In this file, by a selector we mean a keyword that can be used to
+select which combination of simulator and model implementation will
+be addressed by the script run_all_tests.
+
+Example.  According to the table below, 
+
+> run_all_tests hspice
+
+would run the combination of a hspice simulator with the Verilog-A
+model implementation as provided in the directory vacode.
+
+Currently (June 2009) the following selectors are supported by this
+version of the CMC QA toolkit:
+
+
+Selector   | Simulator | Implementation | Remark
+----------------------------------------------------
+hspice     | hspice    | Verilog-A      | as in dir vacode
+ads        | ads       | Verilog-A      | as in dir vacode
+adsSiMKit  | ads       | SiMKit C-code  | see notes below
+
+
+
+
+Notes:
+======
+
+adsSiMKit:
+
+- For the selector adsSiMKit to work, the shell command
+  `adssim' should invoke the SiMKit libraries.
+
+- the selector 'adsSiMKit' at some stage invokes lib/adsSiMKit.pm  

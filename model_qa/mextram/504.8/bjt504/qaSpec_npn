@@ -1,0 +1,56 @@
+//
+// Test specification for Mextram 504.7 bjt504
+//
+// with    substrate
+// without self-heating
+//
+
+//
+// Simulator specific information
+// These arguments are added to the model card
+// specification to invoke the desired model in
+// different simulators (which can have different
+// names or levels for the same model) and to switch
+// between nType and pType polarities.
+// It is assumed that there are no polarity specific
+// parameters.
+//
+
+`ifdef hspice
+TypeSelectionArguments     bjt504va  TYPE=1
+keyLetter                   x
+verilogaFile                ../vacode/bjt504.va
+
+`endif
+
+`ifdef ads
+// -- VERILOG A --
+TypeSelectionArguments     bjt504va level=504 TYPE=1
+keyLetter                   q
+verilogaFile                ../vacode/bjt504.va
+
+`endif
+
+`ifdef adsSiMKit
+// SiMKit
+`define MULT_INSTANCE
+TypeSelectionArguments     bjt504 level=504 Gender=1
+keyLetter                   x
+
+`endif
+
+
+//
+// General test-independent information
+//
+
+pins                        c b e s
+checkPolarity               n
+
+//
+// Specific tests for npn variant
+//
+
+// avalanche tests
+
+`include ../test_specs/avalanche_npn.tests

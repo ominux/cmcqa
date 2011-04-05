@@ -1,0 +1,6 @@
+`include ../test_specs/basics.tests
+
+// Mextram 504.7:
+`include ../test_specs/distributed_Rc.tests
+// Mextram 504.8:
+`include ../test_specs/zener.tests
