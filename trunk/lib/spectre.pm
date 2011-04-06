@@ -6,6 +6,7 @@
 #
 #  Rel  Date            Who             Comments
 # ====  ==========      =============   ========
+#  1.4  04/06/11        Geoffrey Coram  Bug fix (noise)
 #  1.3  06/21/07        Colin McAndrew  Bug fixes
 #  1.2  06/30/06        Colin McAndrew  Floating node support added
 #                                       Noise simulation added
