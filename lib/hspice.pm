@@ -6,6 +6,7 @@
 #
 #  Rel  Date            Who             Comments
 # ====  ==========      =============   ========
+#  1.4  04/06/11        Geoffrey Coram  Fixed version detection; fixed ac-freq result printing
 #  1.3  06/21/07        Rob Jones       Verilog-A model support added
 #                                       HSPICE version detection updated
 #  1.2  06/30/06        Colin McAndrew/ Floating node support added
@@ -363,7 +364,7 @@ sub runAcTest {
             next;
         }
         next if (! $inData);
-        if (($main::fMin != $main::fMax) && ($mPin eq $main::Pin[0]) && ($mPin eq $fPin)) {
+        if (($main::fMin != $main::fMax) && ($fPin eq $first_fPin)) {
             push(@X,&modelQa::unScale($Field[0]));
         }
         $omega=$twoPi*&modelQa::unScale($Field[0]);
