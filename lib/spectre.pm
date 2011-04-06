@@ -121,7 +121,7 @@ sub runNoiseTest {
     }
     print OF "x1 (".join(" ",@main::Pin).") mysub";
     $noisePin=$main::Outputs[0];
-    if ($main::outputNoise != 2) {
+    if ($main::outputNoise == 2) {
         $noisePin="($noisePin,$main::Outputs[1])";
     } elsif (! $main::isFloatingPin{$noisePin}) {
         print OF "fn (0 n_$noisePin) cccs probe=v_$noisePin gain=1";
