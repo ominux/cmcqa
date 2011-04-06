@@ -43,6 +43,7 @@ sub version {
         chomp;
         if (s/.+HSPICE\s+-*\s*//) {
             ($version=$_)=~s/\s+.*//;
+            last;
         }
     }
     close(SIMULATE);
