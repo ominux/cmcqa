@@ -1,0 +1,62 @@
+
+//
+// Test specification for MOSVAR v1.2.0
+//
+
+//
+// Simulator specific information 
+//
+
+nTypeSelectionArguments     mosvar //change TYPE and TYPEP manually
+
+//
+// General test-independent information
+//
+
+keyLetter                   x
+pins                        g bi b
+temperature                 25 -40 125
+checkPolarity               no // no polarity test in MOSVAR QA
+scaleParameters             m  // no scale or shrink  
+verilogaFile                vacode/mosvar.va
+
+//
+// Specific tests
+//
+
+
+// *** Ig-Vg Tests ***
+
+// Ig-Vg @ Vb=0V, SWIGATE=1
+test                        igvg
+biases                      V(b)=0
+float                       bi
+biasSweep                   V(g)=-2.0,2.0,0.02
+outputs                     I(g)
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs
+
+
+// *** AC G & C Tests vs. Vg ***
+
+// Quality factor & capacitance vs. Vg
+test                        acvg
+biases                      V(b)=0
+float                       bi
+biasSweep                   V(g)=-2.0,2.0,0.02
+freq                        lin 1 2e9 2e9
+outputs                     C(g,g) Q(g,g) 
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs
+
+
+// *** AC C Tests vs. Freq. ***
+
+// Capacitance vs. frequency @ Vg=2V
+test                        acfreq
+biases                      V(b)=0 V(g)=2.0
+float                       bi
+freq                        dec 20 1e9 1e10
+outputs                     C(g,g) Q(g,g)
+instanceParameters          W=1.0e-6 L=1.0e-6
+modelParameters             parameters/mosvar.scs
