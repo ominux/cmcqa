@@ -398,9 +398,9 @@ sub runDcTest {
             print OF ".dc v_$main::biasSweepPin $main::biasSweepSpec";
             foreach $pin (@main::Outputs) {
                 if ($main::isFloatingPin{$pin}) {
-                    print OF ".print dc v($pin)"
+                    print OF ".print dc v($pin)";
                 } else {
-                    print OF ".print dc i(v_$pin)"
+                    print OF ".print dc i(v_$pin)";
                 }
             }
             print OF ".end";
