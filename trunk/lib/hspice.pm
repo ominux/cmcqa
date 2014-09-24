@@ -6,6 +6,8 @@
 #
 #  Rel  Date            Who             Comments
 # ====  ==========      =============   ========
+#  1.5  09/24/14        Geoffrey Coram  Verilog-A version detection added
+#                                       Improve clean-up
 #  1.4  04/06/11        Geoffrey Coram  Fixed version detection; fixed ac-freq result printing
 #  1.3  06/21/07        Rob Jones       Verilog-A model support added
 #                                       HSPICE version detection updated
@@ -22,17 +24,38 @@ if (defined($main::simulatorCommand)) {
     $simulatorCommand="hspice";
 }
 $netlistFile="hspiceCkt";
+$dummyVaFile="cmcQaDummy.va";
 use strict;
 
 sub version {
     my($version,$vaVersion);
     $version="unknown";
     $vaVersion="unknown";
+    if (!open(OF,">$simulate::dummyVaFile")) {
+        die("ERROR: cannot open file $simulate::dummyVaFile, stopped");
+    }
+    print OF "";
+    print OF "`include \"discipline.h\"";
+    print OF "module dummy(p,n);";
+    print OF "    inout      p,n;";
+    print OF "    electrical p,n;";
+    print OF "    analog begin";
+    print OF "`ifdef __VAMS_COMPACT_MODELING__";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.2\");";
+    print OF "`else";
+    print OF "        \$strobe(\"Verilog-A version is: LRM2.1\");";
+    print OF "`endif";
+    print OF "        I(p,n)  <+ V(p,n);";
+    print OF "    end";
+    print OF "endmodule";
+    print OF "";
+    close(OF);
     if (!open(OF,">$simulate::netlistFile")) {
         die("ERROR: cannot open file $simulate::netlistFile, stopped");
     }
     print OF "";
-    print OF "r1 1 0 1";
+    print OF ".hdl \"$simulate::dummyVaFile\"";
+    print OF "x1 1 0 dummy";
     print OF "v1 1 0 1";
     print OF ".op";
     print OF ".end";
@@ -43,17 +66,22 @@ sub version {
     while (<SIMULATE>) {
         chomp;
         if (s/.+HSPICE\s+-*\s*//) {
-            ($version=$_)=~s/\s+.*//;
-            last;
+            if ($version eq "unknown" ) {
+                ($version=$_)=~s/\s+.*//;
+            }
+        }
+        if (s/^\s*Verilog-A version is:\s*//i) {
+            $vaVersion=$_;
         }
     }
     close(SIMULATE);
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink("$simulate::netlistFile.st0");
-        if (defined($main::verilogaFile)) {
-            unlink("$simulate::netlistFile.val");
-        }
+        unlink($simulate::dummyVaFile);
+        unlink("$simulate::netlistFile.val");
+        unlink("$simulate::netlistFile.valog");
+        system("/bin/rm -rf $simulate::netlistFile.pvadir");
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
         }
@@ -198,6 +226,8 @@ sub runNoiseTest {
         unlink("$simulate::netlistFile.st0");
         if (defined($main::verilogaFile)) {
             unlink("$simulate::netlistFile.val");
+            unlink("$simulate::netlistFile.valog");
+            system("/bin/rm -rf $simulate::netlistFile.pvadir");
         }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
@@ -436,6 +466,8 @@ sub runAcTest {
         unlink("$simulate::netlistFile.st0");
         if (defined($main::verilogaFile)) {
             unlink("$simulate::netlistFile.val");
+            unlink("$simulate::netlistFile.valog");
+            system("/bin/rm -rf $simulate::netlistFile.pvadir");
         }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
@@ -588,6 +620,8 @@ sub runDcTest {
         unlink("$simulate::netlistFile.st0");
         if (defined($main::verilogaFile)) {
             unlink("$simulate::netlistFile.val");
+            unlink("$simulate::netlistFile.valog");
+            system("/bin/rm -rf $simulate::netlistFile.pvadir");
         }
         if (!opendir(DIRQA,".")) {
             die("ERROR: cannot open directory ., stopped");
