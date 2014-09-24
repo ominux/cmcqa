@@ -607,12 +607,16 @@ sub generateCommonNetlistInfo {
             print OF "f_$pin (${pin}_x 0) cccs probe=e_$pin gain=$fFactor";
         }
     }
-    if (defined($main::verilogaFile)) {
+    if (!defined($main::verilogaFile) || $simulate::vaUseModelCard) {
+        print OF "${main::keyLetter}1 (".join(" ",@main::Pin).") mymodel";
+    } else {
         if ($variant=~/_P/) {
             print OF "${main::keyLetter}1 ".join(" ",@main::Pin)." $main::pTypeSelectionArguments";
         } else {
             print OF "${main::keyLetter}1 ".join(" ",@main::Pin)." $main::nTypeSelectionArguments";
         }
+    }
+    if (defined($main::verilogaFile)) {
         if ($simulate::vaVersion ne "LRM2.2") {
             if ($variant=~/^scale$/) {
                 print OF "+ scale=$main::scaleFactor";
@@ -621,8 +625,6 @@ sub generateCommonNetlistInfo {
                 print OF "+ shrink=$main::shrinkPercent";
             }
         }
-    } else {
-        print OF "${main::keyLetter}1 (".join(" ",@main::Pin).") mymodel";
     }
     foreach $arg (@main::InstanceParameters) {
         ($name,$value)=split(/=/,$arg);
