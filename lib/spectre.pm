@@ -6,6 +6,8 @@
 #
 #  Rel  Date            Who             Comments
 # ====  ==========      =============   ========
+#  1.5  09/24/14        Geoffrey Coram  Detect VA model card support
+#                                       Improve clean-up
 #  1.4  04/06/11        Geoffrey Coram  Bug fix (noise)
 #  1.3  06/21/07        Colin McAndrew  Bug fixes
 #  1.2  06/30/06        Colin McAndrew  Floating node support added
@@ -22,6 +24,7 @@ if (defined($main::simulatorCommand)) {
 $netlistFile="spectreCkt";
 $dummyVaFile="cmcQaDummy.va";
 $vaVersion="unknown";
+$vaUseModelCard=0;
 use strict;
 
 sub version {
@@ -35,6 +38,8 @@ sub version {
     print OF "module dummy(p,n);";
     print OF "    inout      p,n;";
     print OF "    electrical p,n;";
+    print OF "    (* type=\"instance\" *) parameter real ipar = 1;";
+    print OF "    parameter real mpar = 1;";
     print OF "    analog begin";
     print OF "`ifdef __VAMS_COMPACT_MODELING__";
     print OF "        \$strobe(\"Verilog-A version is: LRM2.2\");";
@@ -55,7 +60,7 @@ sub version {
     print OF "ahdl_include \"$simulate::dummyVaFile\"";
     print OF "";
     print OF "v1 (x 0) vsource dc=1";
-    print OF "a1 (x 0) dummy";
+    print OF "a1 (x 0) dummy mpar=1";
     print OF "";
     print OF "op info what=oppoint where=screen";
     print OF "";
@@ -72,12 +77,18 @@ sub version {
         if (s/^\s*Verilog-A version is:\s*//i) {
             $simulate::vaVersion=$_;
         }
+        # this message gets split across two lines
+        # `mpar' is not a valid parameter for an instance of `dummy'.  Ignored.
+        if (/not a valid parameter/) {
+            $simulate::vaUseModelCard=1;
+        }
     }
     close(SIMULATE);
     if (! $main::debug) {
         unlink($simulate::netlistFile);
         unlink($simulate::dummyVaFile);
-        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.out");
+        system("/bin/rm -rf $simulate::dummyVaFile.dummy.ahdlcmi $simulate::netlistFile.ahdlSimDB");
+        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.log");
     }
     return($version,$simulate::vaVersion);
 }
@@ -220,7 +231,10 @@ sub runNoiseTest {
 
     if (! $main::debug) {
         unlink($simulate::netlistFile);
-        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.out");
+        if (defined($main::verilogaFile)) {
+            system("/bin/rm -rf $main::verilogaFile.*.ahdlcmi $simulate::netlistFile.ahdlSimDB");
+        }
+        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.log");
     }
 }
 
@@ -410,7 +424,10 @@ sub runAcTest {
 
     if (! $main::debug) {
         unlink($simulate::netlistFile);
-        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.out");
+        if (defined($main::verilogaFile)) {
+            system("/bin/rm -rf $main::verilogaFile.*.ahdlcmi $simulate::netlistFile.ahdlSimDB");
+        }
+        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.log");
     }
 }
 
@@ -533,7 +550,10 @@ sub runDcTest {
 
     if (! $main::debug) {
         unlink($simulate::netlistFile);
-        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.out");
+        if (defined($main::verilogaFile)) {
+            system("/bin/rm -rf $main::verilogaFile.*.ahdlcmi $simulate::netlistFile.ahdlSimDB");
+        }
+        system("/bin/rm -rf $simulate::netlistFile.raw $simulate::netlistFile.log");
     }
 }
 
@@ -625,7 +645,7 @@ sub generateCommonNetlistInfo {
     if ($variant eq "m") {
         print OF "+ m=$main::mFactor";
     }
-    if (!defined($main::verilogaFile)) {
+    if (!defined($main::verilogaFile) || $simulate::vaUseModelCard) {
         if ($variant=~/_P/) {
             print OF "model mymodel $main::pTypeSelectionArguments";
         } else {
