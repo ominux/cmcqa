@@ -1,0 +1,1 @@
+The GEIA Compact Model Council, which selects and standardizes compact device models (for transistors, resistors, etc.) has developed a QA framework to verify that a CMC standard model runs correctly in a circuit simulator.
